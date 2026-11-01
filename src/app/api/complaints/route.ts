@@ -45,8 +45,14 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const category = url.searchParams.get("category") as ComplaintCategory | null;
     const departmentId = url.searchParams.get("departmentId") || undefined;
+    const wardId = url.searchParams.get("wardId") || undefined;
+    const status = url.searchParams.get("status") || undefined;
+    const priorityBand = url.searchParams.get("priorityBand") || undefined;
+    const search = url.searchParams.get("search") || undefined;
+    const sortBy = (url.searchParams.get("sortBy") as "priority" | "recent" | "supported") || undefined;
     const isPublicOnly = url.searchParams.get("public") === "true";
     const userOnly = url.searchParams.get("mine") === "true";
+    const limit = url.searchParams.get("limit") ? parseInt(url.searchParams.get("limit")!, 10) : 250;
 
     const user = await getSessionUser();
     const userId = userOnly && user ? user.uid : undefined;
@@ -54,9 +60,14 @@ export async function GET(req: NextRequest) {
     const complaints = await listComplaints({
       category: category || undefined,
       departmentId,
+      wardId,
+      status,
+      priorityBand,
+      search,
+      sortBy,
       isPublicOnly,
       userId,
-      limit: 100,
+      limit,
     });
 
     return NextResponse.json({ complaints, total: complaints.length });

@@ -299,16 +299,24 @@ export async function getComplaint(refOrId: string): Promise<Complaint | null> {
   return null;
 }
 
-/**
- * Lists complaints with filtering & pagination
- */
-export async function listComplaints(options: {
+export interface ListComplaintsOptions {
   userId?: string | undefined;
   departmentId?: string | undefined;
   category?: ComplaintCategory | undefined;
+  wardId?: string | undefined;
+  status?: string | undefined;
+  priorityBand?: string | undefined;
+  search?: string | undefined;
   isPublicOnly?: boolean | undefined;
+  sortBy?: "priority" | "recent" | "supported" | undefined;
   limit?: number | undefined;
-}): Promise<Complaint[]> {
+  offset?: number | undefined;
+}
+
+/**
+ * Lists complaints with filtering & pagination
+ */
+export async function listComplaints(options: ListComplaintsOptions): Promise<Complaint[]> {
   const all = getAllInMemoryComplaints();
   let filtered = all;
 
@@ -322,12 +330,125 @@ export async function listComplaints(options: {
   if (options.category) {
     filtered = filtered.filter((c) => c.category === options.category);
   }
+  if (options.wardId) {
+    const w = options.wardId.toLowerCase();
+    filtered = filtered.filter((c) => c.location.wardId === options.wardId || (c.location.wardName && c.location.wardName.toLowerCase() === w));
+  }
+  if (options.status) {
+    if (options.status === "OPEN_ALL") {
+      filtered = filtered.filter((c) => c.status !== "RESOLVED" && c.status !== "CLOSED");
+    } else {
+      filtered = filtered.filter((c) => c.status === options.status);
+    }
+  }
+  if (options.priorityBand) {
+    filtered = filtered.filter((c) => c.priority.band === options.priorityBand);
+  }
   if (options.isPublicOnly) {
     filtered = filtered.filter((c) => c.visibility === "public");
   }
+  if (options.search) {
+    const q = options.search.toLowerCase().trim();
+    filtered = filtered.filter(
+      (c) =>
+        c.ref.toLowerCase().includes(q) ||
+        c.title.toLowerCase().includes(q) ||
+        c.description.toLowerCase().includes(q) ||
+        c.category.toLowerCase().includes(q) ||
+        (c.location.landmark && c.location.landmark.toLowerCase().includes(q)) ||
+        (c.location.wardName && c.location.wardName.toLowerCase().includes(q)),
+    );
+  }
 
-  // Sort by priority score descending
-  filtered.sort((a, b) => b.priority.score - a.priority.score);
+  // Sorting
+  if (options.sortBy === "recent") {
+    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  } else if (options.sortBy === "supported") {
+    filtered.sort((a, b) => (b.supporterCount || 0) - (a.supporterCount || 0));
+  } else {
+    // Default: Sort by priority score descending
+    filtered.sort((a, b) => b.priority.score - a.priority.score);
+  }
 
-  return filtered.slice(0, options.limit || 50);
+  const offset = options.offset || 0;
+  const limit = options.limit || 50;
+
+  return filtered.slice(offset, offset + limit);
 }
+
+/**
+ * Adds citizen support (upvote / add my voice) to a complaint
+ */
+export async function supportComplaint(
+  refOrId: string,
+  userUid = "demo-citizen-uid",
+): Promise<{ success: boolean; supporterCount: number; complaint: Complaint }> {
+  ensureSeedLoaded();
+  const complaint = await getComplaint(refOrId);
+  if (!complaint) {
+    throw new Error("Complaint not found");
+  }
+
+  if (!complaint.supporterUids) {
+    complaint.supporterUids = [];
+  }
+  if (!complaint.supporterUids.includes(userUid)) {
+    complaint.supporterUids.push(userUid);
+  }
+  complaint.supporterCount = (complaint.supporterCount || 0) + 1;
+  complaint.independentReporterCount = (complaint.independentReporterCount || 1) + 1;
+
+  // Recompute priority with increased reporter count
+  const catConfig = CATEGORY_CONFIG[complaint.category];
+  const nowMs = Date.now();
+  const createdMs = new Date(complaint.createdAt).getTime();
+
+  const newPriority = computePriority({
+    baseSeverity: catConfig.baseSeverity,
+    verifiedSeverity: complaint.verifiedSeverity,
+    hazardFlags: complaint.hazardFlags,
+    independentReporterCount: complaint.independentReporterCount,
+    createdAtMs: createdMs,
+    nowMs,
+    slaHours: complaint.slaHours,
+    affectedScale: complaint.affectedScale,
+    nearbyOpenClusters: 0,
+    timeSensitive: catConfig.timeSensitive,
+    seasonMonths: catConfig.seasonMonths,
+    adjustment: complaint.priority.adjustment,
+    weights: DEFAULT_WEIGHTS,
+    bands: DEFAULT_BANDS,
+    weightsVersion: DEFAULT_WEIGHTS_VERSION,
+    provisional: false,
+  });
+
+  complaint.priority = newPriority;
+  complaint.updatedAt = new Date().toISOString();
+
+  // Update in-memory cache
+  addInMemoryComplaint(complaint);
+
+  try {
+    const firestore = getAdminFirestore();
+    const docRef = firestore.collection("complaints").doc(complaint.id);
+    await docRef.update({
+      supporterUids: complaint.supporterUids,
+      supporterCount: complaint.supporterCount,
+      independentReporterCount: complaint.independentReporterCount,
+      priority: complaint.priority,
+      updatedAt: complaint.updatedAt,
+    });
+    if (complaint.visibility === "public") {
+      await firestore.collection("publicComplaints").doc(complaint.id).update({
+        supporterCount: complaint.supporterCount,
+        independentReporterCount: complaint.independentReporterCount,
+        priority: complaint.priority,
+      });
+    }
+  } catch (err) {
+    console.warn("Firestore update skipped/fallback:", err);
+  }
+
+  return { success: true, supporterCount: complaint.supporterCount, complaint };
+}
+
