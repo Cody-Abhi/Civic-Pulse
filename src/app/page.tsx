@@ -1,238 +1,195 @@
-"use client";
-
-import { Shield, BarChart3, MapPin, Clock, Users, Zap, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import {
+  FileText,
+  MapPin,
+  BarChart3,
+  Zap,
+  Shield,
+  Radar,
+  Map,
+  ArrowRight,
+  Eye,
+  Cpu,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge, PriorityBadge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
-import { BentoGrid, BentoItem } from "@/components/layout/bento";
-import { KpiCard } from "@/components/data/kpi-card";
-import { MetricStrip } from "@/components/data/metric-strip";
-import { FadeIn, StaggerChildren, StaggerItem, TextGenerate, MagneticButton, DotPattern } from "@/components/motion";
+
+const STEPS = [
+  {
+    number: "01",
+    title: "Describe the issue",
+    description: "Write a free-text report. Our AI classifies it into the right category and department.",
+    icon: FileText,
+  },
+  {
+    number: "02",
+    title: "Pin the location",
+    description: "Drop a pin or share your GPS coordinates. We map it to the correct ward automatically.",
+    icon: MapPin,
+  },
+  {
+    number: "03",
+    title: "Deterministic priority",
+    description: "Seven weighted factors produce an explainable score. AI advises, but the formula decides.",
+    icon: BarChart3,
+  },
+  {
+    number: "04",
+    title: "Track to resolution",
+    description: "Follow your report through every status change. Get notified when action is taken.",
+    icon: Eye,
+  },
+];
+
+const DIFFERENTIATORS = [
+  {
+    title: "Priority Receipt",
+    description:
+      "Every complaint gets an itemised priority receipt — a transparent ledger showing exactly how the score was calculated. No black boxes.",
+    icon: Shield,
+  },
+  {
+    title: "Duplicate Radar",
+    description:
+      "Jaccard similarity and geohash proximity detect duplicate reports automatically, so authorities see clustered issues, not scattered noise.",
+    icon: Radar,
+  },
+  {
+    title: "Ward Pulse Map",
+    description:
+      "A live heatmap of civic issues by ward, with cluster markers and category filters. Built on OpenFreeMap — zero cost, full control.",
+    icon: Map,
+  },
+];
 
 export default function HomePage() {
   return (
-    <main
-      id="main"
-      className="relative mx-auto flex min-h-dvh max-w-[1120px] flex-col gap-12 px-4 py-12 md:px-8"
-    >
-      {/* Subtle dot pattern background */}
-      <DotPattern className="text-border opacity-50" glow />
-
-      {/* ── Hero ── */}
-      <header className="relative flex flex-col gap-5">
-        <FadeIn delay={0} distance={16}>
-          <span className="inline-flex w-fit items-center gap-1.5 rounded-xs bg-demo-bg px-2.5 py-1 text-[13px] font-medium text-demo-fg">
-            <Icon icon={Zap} size={16} />
-            Build in progress · Foundation phase
-          </span>
-        </FadeIn>
-        <FadeIn delay={0.1}>
-          <h1 className="text-[36px] font-bold leading-[1.08] tracking-[-0.025em] text-ink md:text-[56px]">
-            CivicPulse AI
-          </h1>
-        </FadeIn>
-        <FadeIn delay={0.2}>
-          <p className="max-w-[64ch] text-lg leading-relaxed text-ink-secondary">
-            <TextGenerate
-              text="Turning citizen voices into intelligent city action. Every report becomes evidence; every authority decision becomes explainable."
-              delay={0.3}
-            />
-          </p>
-        </FadeIn>
-        <FadeIn delay={0.4}>
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <MagneticButton strength={0.15}>
-              <Button size="lg" className="group">
-                Get started
-                <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+    <main id="main" className="flex flex-col">
+      {/* Hero */}
+      <section className="bg-secondary">
+        <div className="mx-auto flex max-w-[1360px] flex-col gap-8 px-4 py-16 md:flex-row md:items-center md:gap-12 md:px-8 md:py-24">
+          <div className="flex flex-1 flex-col gap-6">
+            <h1 className="text-[32px] font-bold leading-[1.1] tracking-[-0.025em] text-on-primary md:text-[48px]">
+              Turning citizen voices into intelligent city action
+            </h1>
+            <p className="max-w-[52ch] text-base leading-relaxed text-on-primary/70 md:text-lg">
+              Every report becomes a structured, located, prioritised record.
+              Every authority decision becomes explainable. Independent civic-tech
+              prototype — not affiliated with any government body.
+            </p>
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Button size="lg" asChild>
+                <Link href="/citizen/complaints/new">
+                  Report an issue
+                  <ArrowRight size={16} className="ml-1" />
+                </Link>
               </Button>
-            </MagneticButton>
-            <MagneticButton strength={0.15}>
-              <Button variant="outline" size="lg">
-                Learn more
-              </Button>
-            </MagneticButton>
-          </div>
-        </FadeIn>
-      </header>
-
-      {/* ── KPI strip ── */}
-      <FadeIn delay={0.1}>
-        <section className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-ink">Platform metrics</h2>
-            <Badge variant="neutral" className="text-xs">
-              Specimen
-            </Badge>
-          </div>
-          <MetricStrip
-            items={[
-              { label: "Total received", value: 1_247, unit: "count" },
-              { label: "Resolution rate", value: 87.3, unit: "percent", hint: "resolved / received × 100" },
-              { label: "SLA compliance", value: 91.2, unit: "percent", hint: "slaMet / (slaMet + slaMissed) × 100" },
-              { label: "Avg. resolution", value: 18.4, unit: "hours", hint: "resolutionHoursSum / resolutionCount" },
-            ]}
-          />
-        </section>
-      </FadeIn>
-
-      {/* ── Bento feature grid ── */}
-      <section className="flex flex-col gap-5">
-        <FadeIn>
-          <h2 className="text-xl font-semibold text-ink">Design system specimen</h2>
-        </FadeIn>
-        <StaggerChildren stagger={0.1}>
-          <BentoGrid>
-            <StaggerItem>
-              <BentoItem span={3}>
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <Icon icon={Shield} size={20} className="text-primary" />
-                    <h3 className="text-base font-semibold text-ink">Priority bands</h3>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <PriorityBadge band="CRITICAL" />
-                    <PriorityBadge band="HIGH" />
-                    <PriorityBadge band="MEDIUM" />
-                    <PriorityBadge band="LOW" />
-                  </div>
-                  <p className="text-sm text-muted">
-                    Deterministic 7-factor weighted score (§29). AI is advisory —
-                    priority is always explainable.
-                  </p>
-                </div>
-              </BentoItem>
-            </StaggerItem>
-
-            <StaggerItem>
-              <BentoItem span={3}>
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <Icon icon={MapPin} size={20} className="text-primary" />
-                    <h3 className="text-base font-semibold text-ink">Geospatial intelligence</h3>
-                  </div>
-                  <p className="text-sm text-muted">
-                    OpenFreeMap with ward-level heatmaps, cluster markers, and
-                    hybrid duplicate detection (embedding cosine + TF-IDF fallback).
-                  </p>
-                  <code className="mt-1 inline-block max-w-full overflow-x-auto rounded-xs bg-sunken px-2 py-1 font-mono text-[13px] text-ink">
-                    geohash: u4pruydqqvj · radius 500 m
-                  </code>
-                </div>
-              </BentoItem>
-            </StaggerItem>
-
-            <StaggerItem>
-              <BentoItem span={2}>
-                <KpiCard
-                  label="Unique issues"
-                  value={1_043}
-                  unit="count"
-                  icon={Users}
-                  hint="received − duplicatesConfirmed"
-                  delta={{ value: 12, direction: "up", goodWhen: "down" }}
-                  animate
-                />
-              </BentoItem>
-            </StaggerItem>
-
-            <StaggerItem>
-              <BentoItem span={2}>
-                <KpiCard
-                  label="Resolution rate"
-                  value={87.3}
-                  unit="percent"
-                  icon={BarChart3}
-                  hint="resolved / received × 100"
-                  delta={{ value: 4.2, direction: "up", goodWhen: "up" }}
-                  animate
-                />
-              </BentoItem>
-            </StaggerItem>
-
-            <StaggerItem>
-              <BentoItem span={2}>
-                <KpiCard
-                  label="Avg. resolution"
-                  value={18.4}
-                  unit="hours"
-                  icon={Clock}
-                  hint="resolutionHoursSum / resolutionCount"
-                  delta={{ value: 2.1, direction: "down", goodWhen: "down" }}
-                  animate
-                />
-              </BentoItem>
-            </StaggerItem>
-
-            <StaggerItem>
-              <BentoItem span={6}>
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-semibold text-ink">Surface &amp; AI tokens</h3>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <article className="rounded-sm border border-border bg-surface p-4 transition-all duration-200 hover:shadow-e1 hover:border-primary/15">
-                      <h4 className="text-sm font-semibold text-ink">Surface card</h4>
-                      <p className="mt-1 text-sm text-muted">
-                        1px border, elevation shadow, consistent radius tokens.
-                      </p>
-                      <code className="mt-2 inline-block font-mono text-[13px] tracking-[0.02em] text-ink">
-                        CP-BLR-2611-000124
-                      </code>
-                    </article>
-                    <article className="rounded-sm border border-ai-border bg-ai-bg p-4 transition-all duration-200 hover:shadow-e1">
-                      <h4 className="text-sm font-semibold text-ink">AI-generated content</h4>
-                      <p className="mt-1 text-sm text-ink-secondary">
-                        Gemini suggestions are always advisory and clearly labelled.
-                      </p>
-                      <Badge variant="ai" className="mt-2">
-                        AI suggested
-                      </Badge>
-                    </article>
-                  </div>
-                </div>
-              </BentoItem>
-            </StaggerItem>
-          </BentoGrid>
-        </StaggerChildren>
-      </section>
-
-      {/* ── Glass specimen ── */}
-      <FadeIn>
-        <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold text-ink">Glassmorphism (selective)</h2>
-          <p className="text-sm text-muted">
-            Reserved for floating map controls and overlays — never full-site.
-          </p>
-          <div className="relative h-32 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-accent/10">
-            <div className="cp-glass absolute inset-x-4 bottom-4 flex items-center justify-between rounded-sm px-4 py-3">
-              <span className="text-sm font-medium text-ink">Map overlay control</span>
-              <Button variant="ghost" size="sm">
-                Filters
+              <Button variant="ghost" size="lg" asChild className="border border-on-primary/40 bg-transparent text-on-primary hover:bg-on-primary/10">
+                <Link href="/explore/map">Explore the live map</Link>
               </Button>
             </div>
           </div>
-        </section>
-      </FadeIn>
-
-      {/* ── Button variants ── */}
-      <FadeIn>
-        <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold text-ink">Interaction states</h2>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button>Primary</Button>
-            <Button variant="secondary">Secondary</Button>
-            <Button variant="outline">Outline</Button>
-            <Button variant="ghost">Ghost</Button>
-            <Button variant="destructive">Destructive</Button>
-            <Button variant="link">Link</Button>
-            <Button disabled>Disabled</Button>
+          <div className="flex-1">
+            <div
+              className="flex h-[280px] items-center justify-center rounded-lg border border-on-primary/10 bg-on-primary/5 md:h-[360px]"
+              aria-label="Map placeholder — MapLibre renders here once connected"
+            >
+              <div className="flex flex-col items-center gap-2 text-on-primary/40">
+                <Icon icon={Map} size={48} />
+                <span className="text-sm font-medium">Live map of Bengaluru</span>
+                <span className="text-xs">Connects with OpenFreeMap</span>
+              </div>
+            </div>
           </div>
-        </section>
-      </FadeIn>
+        </div>
+      </section>
 
-      <footer className="mt-auto border-t border-border pt-6 text-sm text-muted">
-        Independent prototype. Not affiliated with any government body.
+      {/* How it works */}
+      <section className="bg-canvas">
+        <div className="mx-auto max-w-[1360px] px-4 py-16 md:px-8 md:py-20">
+          <h2 className="text-center text-[24px] font-bold tracking-[-0.02em] text-ink md:text-[30px]">
+            How it works
+          </h2>
+          <p className="mx-auto mt-2 max-w-[48ch] text-center text-sm text-muted">
+            Four steps from citizen report to city action
+          </p>
+          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {STEPS.map((step) => (
+              <article key={step.number} className="flex flex-col gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-subtle">
+                  <Icon icon={step.icon} size={20} className="text-primary" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="font-mono text-xs font-semibold text-primary">{step.number}</span>
+                  <h3 className="text-base font-semibold text-ink">{step.title}</h3>
+                </div>
+                <p className="text-sm leading-relaxed text-muted">{step.description}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Differentiators */}
+      <section className="border-t border-border bg-surface">
+        <div className="mx-auto max-w-[1360px] px-4 py-16 md:px-8 md:py-20">
+          <h2 className="text-[24px] font-bold tracking-[-0.02em] text-ink md:text-[30px]">
+            What makes CivicPulse different
+          </h2>
+          <div className="mt-10 grid gap-8 md:grid-cols-3">
+            {DIFFERENTIATORS.map((item) => (
+              <article
+                key={item.title}
+                className="flex flex-col gap-3 rounded-md border border-border bg-canvas p-6"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-subtle">
+                  <Icon icon={item.icon} size={20} className="text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-ink">{item.title}</h3>
+                <p className="text-sm leading-relaxed text-muted">{item.description}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How we use AI */}
+      <section className="border-t border-border bg-canvas">
+        <div className="mx-auto max-w-[1360px] px-4 py-16 md:px-8 md:py-20">
+          <div className="mx-auto flex max-w-[640px] flex-col items-center gap-4 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ai-bg">
+              <Icon icon={Cpu} size={24} className="text-ink-secondary" />
+            </div>
+            <h2 className="text-[24px] font-bold tracking-[-0.02em] text-ink md:text-[30px]">
+              How we use AI
+            </h2>
+            <p className="text-sm leading-relaxed text-muted">
+              Gemini analyses each report to suggest a category, detect duplicates,
+              and generate a plain-language summary for authorities. But AI is
+              advisory only — the priority score is always deterministic, computed
+              from seven weighted factors you can inspect in the Priority Receipt.
+              Every AI-generated suggestion is clearly labelled.
+            </p>
+            <div className="mt-2 flex items-center gap-2 rounded-full bg-ai-bg px-4 py-1.5">
+              <Icon icon={Zap} size={16} className="text-ink-secondary" />
+              <span className="text-xs font-medium text-ink-secondary">
+                Powered by Gemini · Server-side only · Your data stays private
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-surface">
+        <div className="mx-auto flex max-w-[1360px] flex-col gap-4 px-4 py-8 text-sm text-muted md:flex-row md:items-center md:justify-between md:px-8">
+          <p>
+            Independent civic-tech prototype. Not affiliated with any government body.
+          </p>
+          <p>
+            Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline hover:text-ink">OpenStreetMap</a> contributors · Tiles by <a href="https://openfreemap.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-ink">OpenFreeMap</a>
+          </p>
+        </div>
       </footer>
     </main>
   );

@@ -9,11 +9,40 @@ export interface MetricStripItem {
   hint?: string;
 }
 
-/**
- * Inline primary metric strip (§15.3 anti-template rule): one row of stats
- * separated by dividers, not identical floating cards. Wraps to 2-up on mobile.
- */
-export function MetricStrip({ items, className }: { items: MetricStripItem[]; className?: string }) {
+interface MetricStripProps {
+  items: MetricStripItem[];
+  loading?: boolean;
+  error?: string | null;
+  className?: string;
+}
+
+export function MetricStrip({ items, loading = false, error, className }: MetricStripProps) {
+  if (loading) {
+    return (
+      <div
+        className={cn(
+          "grid grid-cols-2 gap-x-6 gap-y-5 rounded-md border border-border bg-surface p-5 sm:grid-cols-4",
+          className,
+        )}
+      >
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="flex flex-col gap-2">
+            <div className="h-3 w-16 rounded-xs bg-sunken skeleton-shimmer-light" />
+            <div className="h-7 w-20 rounded-xs bg-sunken skeleton-shimmer-light" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cn("rounded-md border border-danger/20 bg-danger-bg px-5 py-4 text-sm text-danger", className)}>
+        {error}
+      </div>
+    );
+  }
+
   return (
     <dl
       className={cn(

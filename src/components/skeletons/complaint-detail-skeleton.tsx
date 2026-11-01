@@ -1,16 +1,17 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Icon } from "@/components/ui/icon";
 import { MapSkeleton } from "./map-skeleton";
+import { useSafeReducedMotion } from "@/lib/use-safe-reduced-motion";
 
 export function ComplaintDetailSkeleton({ className }: { className?: string }) {
-  const prefersReduced = useReducedMotion();
+  const skipMotion = useSafeReducedMotion();
 
   const staggerItem = (i: number) =>
-    prefersReduced
+    skipMotion
       ? {}
       : {
           initial: { opacity: 0, y: 16 } as const,
@@ -20,22 +21,19 @@ export function ComplaintDetailSkeleton({ className }: { className?: string }) {
 
   return (
     <div className={cn("flex flex-col gap-6", className)}>
-      {/* Back navigation */}
       <motion.div className="flex items-center gap-2 text-muted" {...staggerItem(0)}>
         <Icon icon={ArrowLeft} size={20} />
         <span className="text-sm font-medium">Back</span>
       </motion.div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        {/* Main content */}
         <div className="flex flex-col gap-6">
-          {/* Main card with pulsing loader */}
           <motion.div
             className="flex flex-col items-center gap-4 rounded-lg border border-border bg-surface p-10 shadow-e1"
             {...staggerItem(1)}
           >
             <div className="relative flex h-20 w-20 items-center justify-center">
-              {!prefersReduced && (
+              {!skipMotion && (
                 <motion.div
                   className="absolute inset-0 rounded-full border-2 border-primary/20"
                   animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.2, 0.5] }}
@@ -50,7 +48,6 @@ export function ComplaintDetailSkeleton({ className }: { className?: string }) {
             <p className="text-sm text-muted">Fetching complaint information from the database</p>
           </motion.div>
 
-          {/* Detail rows */}
           <motion.div
             className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-6 shadow-e1"
             {...staggerItem(2)}
@@ -66,7 +63,6 @@ export function ComplaintDetailSkeleton({ className }: { className?: string }) {
             ))}
           </motion.div>
 
-          {/* Timeline */}
           <motion.div
             className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-6 shadow-e1"
             {...staggerItem(3)}
@@ -84,7 +80,6 @@ export function ComplaintDetailSkeleton({ className }: { className?: string }) {
           </motion.div>
         </div>
 
-        {/* Side panel */}
         <div className="flex flex-col gap-6">
           <motion.div {...staggerItem(2)}>
             <MapSkeleton className="h-[220px]" />

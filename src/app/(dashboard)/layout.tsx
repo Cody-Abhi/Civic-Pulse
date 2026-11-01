@@ -1,10 +1,7 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { BottomTabs } from "@/components/layout/bottom-tabs";
 
-/**
- * Dashboard shell — sidebar + topbar + content area.
- * Used by citizen, authority, and admin route groups.
- */
 export default function DashboardLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -18,10 +15,13 @@ export default function DashboardLayout({
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar />
-        <main className="flex-1 overflow-y-auto bg-canvas p-6">
+        <main className="flex-1 overflow-y-auto bg-canvas p-4 pb-20 md:p-6 md:pb-6">
           {children}
         </main>
       </div>
+
+      {/* Mobile bottom tab bar */}
+      <BottomTabs />
     </div>
   );
 }

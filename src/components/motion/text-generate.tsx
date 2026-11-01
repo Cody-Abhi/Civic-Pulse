@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useInView, useReducedMotion } from "motion/react";
+import { motion, useInView } from "motion/react";
 import { cn } from "@/lib/cn";
+import { useMounted } from "@/lib/use-mounted";
 
 interface TextGenerateProps {
   text: string;
@@ -19,12 +20,13 @@ export function TextGenerate({
 }: TextGenerateProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-40px" });
-  const prefersReduced = useReducedMotion();
-  const words = text.split(" ");
+  const mounted = useMounted();
 
-  if (prefersReduced) {
+  if (!mounted) {
     return <span className={className}>{text}</span>;
   }
+
+  const words = text.split(" ");
 
   return (
     <span ref={ref} className={cn("inline", className)}>
@@ -33,14 +35,14 @@ export function TextGenerate({
           key={`${word}-${i}`}
           className="inline-block"
           initial={{ opacity: 0, filter: "blur(4px)" }}
-          animate={inView ? { opacity: 1, filter: "blur(0px)" } : {}}
+          animate={inView ? { opacity: 1, filter: "blur(0px)" } : { opacity: 0, filter: "blur(4px)" }}
           transition={{
             duration: 0.3,
             delay: delay + i * stagger,
             ease: [0.2, 0.8, 0.2, 1],
           }}
         >
-          {word}{i < words.length - 1 ? " " : ""}
+          {word}{i < words.length - 1 ? " " : ""}
         </motion.span>
       ))}
     </span>

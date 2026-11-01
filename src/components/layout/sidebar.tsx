@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import {
   LayoutDashboard,
   FileText,
@@ -19,28 +19,28 @@ import {
 import { cn } from "@/lib/cn";
 import { CivicPulseLogo } from "@/components/auth/civicpulse-logo";
 import { Icon } from "@/components/ui/icon";
+import { useSafeReducedMotion } from "@/lib/use-safe-reduced-motion";
 
 interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
-  badge?: number;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/citizen/dashboard", icon: LayoutDashboard },
-  { label: "Complaints", href: "/citizen/complaints", icon: FileText },
+  { label: "My Reports", href: "/citizen/complaints", icon: FileText },
   { label: "Analytics", href: "/citizen/analytics", icon: BarChart3 },
   { label: "Map", href: "/citizen/map", icon: MapPin },
-  { label: "Notifications", href: "/citizen/notifications", icon: Bell, badge: 3 },
+  { label: "Notifications", href: "/citizen/notifications", icon: Bell },
   { label: "Profile", href: "/citizen/profile", icon: User },
   { label: "Settings", href: "/citizen/settings", icon: Settings },
 ];
 
 export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname();
+  const skipMotion = useSafeReducedMotion();
   const [darkMode, setDarkMode] = React.useState(false);
-  const prefersReduced = useReducedMotion();
 
   return (
     <aside
@@ -71,7 +71,7 @@ export function Sidebar({ className }: { className?: string }) {
               )}
             >
               {isActive && (
-                prefersReduced ? (
+                skipMotion ? (
                   <span
                     className="absolute inset-0 rounded-lg"
                     style={{ backgroundColor: "var(--cp-sidebar-active)" }}
@@ -90,24 +90,11 @@ export function Sidebar({ className }: { className?: string }) {
                   icon={item.icon}
                   size={18}
                   className={cn(
-                    "transition-transform duration-200",
                     isActive ? "text-white" : "text-white/50 group-hover:text-white/80",
-                    !isActive && "group-hover:scale-110",
                   )}
                 />
                 {item.label}
               </span>
-              {item.badge != null && item.badge > 0 && (
-                <motion.span
-                  className="relative z-10 ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold"
-                  style={{ backgroundColor: "var(--cp-auth-notif-bg)", color: "var(--cp-auth-text-white)" }}
-                  initial={prefersReduced ? false : { scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 15, delay: 0.5 }}
-                >
-                  {item.badge}
-                </motion.span>
-              )}
             </Link>
           );
         })}
