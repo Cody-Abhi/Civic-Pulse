@@ -1,0 +1,89 @@
+rules_version = '2';
+
+// CivicPulse AI — Firestore security rules (PRD §24).
+// Clients may ONLY read. Every write goes through Next.js Route Handlers using
+// the Firebase Admin SDK, which bypasses these rules. Rules are not filters:
+// client queries must carry matching constraints (verified by RULES-001…012).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Signed in AND not suspended. Suspension sets a 'status' claim and revokes
+    // refresh tokens, so reads are cut off within ≤1h; API routes cut off now.
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.get('status', 'active') != 'suspended';
+    }
+    function role() { return signedIn() ? request.auth.token.role : null; }
+    function isAdmin() { return role() == 'admin'; }
+    function isAuthority() { return role() == 'authority'; }
+    function dept() { return request.auth.token.departmentId; }
+    function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
+
+    // Default deny (covers complaintEmbeddings, counters, idempotencyKeys, …).
+    match /{document=**} { allow read, write: if false; }
+
+    match /users/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow write: if false;
+      match /pushTokens/{t} { allow read, write: if false; }
+    }
+
+    match /complaints/{id} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.reporterUid == request.auth.uid)
+        || (signedIn() && request.auth.uid in resource.data.followerUids)
+        || (isAuthority() && resource.data.departmentId == dept());
+      allow write: if false;
+    }
+
+    match /publicComplaints/{id} { allow read: if true; allow write: if false; }
+
+    match /complaintActivities/{id} {
+      allow read: if isAdmin()
+        || (isAuthority() && resource.data.departmentId == dept())
+        || (signedIn() && resource.data.reporterUid == request.auth.uid
+            && resource.data.visibleToReporter == true);
+      allow write: if false;
+    }
+
+    match /duplicateSuggestions/{id} {
+      allow read: if isAdmin() || (isAuthority() && resource.data.departmentId == dept());
+      allow write: if false;
+    }
+
+    match /aiAnalyses/{id} {
+      allow read: if isAdmin()
+        || (isAuthority() && resource.data.departmentId == dept())
+        || (signedIn() && resource.data.reporterUid == request.auth.uid);
+      allow write: if false;
+    }
+
+    match /aiInsights/{id} {
+      allow read: if isAdmin() || (isAuthority() && resource.data.scope == 'dept:' + dept());
+      allow write: if false;
+    }
+
+    match /notifications/{id} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /departments/{id} { allow read: if signedIn(); allow write: if false; }
+
+    match /departmentMetrics/{id} {
+      allow read: if isAdmin() || (isAuthority() && id == dept());
+      allow write: if false;
+    }
+
+    match /cityMetrics/{id} { allow read: if true; allow write: if false; }
+    match /mapSnapshots/{id} { allow read: if true; allow write: if false; }
+
+    match /systemSettings/{id} {
+      allow read: if id in ['priorityWeights', 'categories', 'health'] || isAdmin();
+      allow write: if false;
+    }
+
+    match /auditLogs/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /usageCounters/{id} { allow read: if isAdmin(); allow write: if false; }
+  }
+}

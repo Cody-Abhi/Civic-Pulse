@@ -1,0 +1,345 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+
+/* Map the "Survey Ledger" semantic tokens to Tailwind v4 utilities.
+   `inline` makes utilities resolve directly to the --cp-* custom properties,
+   so themes can be swapped at runtime without rebuilding. Components reference
+   these utilities (bg-surface, text-muted, …) and never raw hex (§44). */
+@theme inline {
+  /* Brand */
+  --color-primary: var(--cp-primary);
+  --color-primary-hover: var(--cp-primary-hover);
+  --color-primary-subtle: var(--cp-primary-subtle);
+  --color-on-primary: var(--cp-on-primary);
+  --color-secondary: var(--cp-secondary);
+  --color-secondary-subtle: var(--cp-secondary-subtle);
+  --color-accent: var(--cp-accent);
+
+  /* Surfaces */
+  --color-canvas: var(--cp-bg);
+  --color-surface: var(--cp-surface);
+  --color-sunken: var(--cp-surface-sunken);
+
+  /* Text */
+  --color-ink: var(--cp-text);
+  --color-ink-secondary: var(--cp-text-secondary);
+  --color-muted: var(--cp-text-muted);
+
+  /* Borders */
+  --color-border: var(--cp-border);
+  --color-border-strong: var(--cp-border-strong);
+
+  /* Status */
+  --color-success: var(--cp-success);
+  --color-success-bg: var(--cp-success-bg);
+  --color-warning: var(--cp-warning);
+  --color-warning-bg: var(--cp-warning-bg);
+  --color-danger: var(--cp-danger);
+  --color-danger-bg: var(--cp-danger-bg);
+  --color-info: var(--cp-info);
+  --color-info-bg: var(--cp-info-bg);
+
+  /* Priority */
+  --color-prio-critical-fg: var(--cp-prio-critical-fg);
+  --color-prio-critical-bg: var(--cp-prio-critical-bg);
+  --color-prio-critical-solid: var(--cp-prio-critical-solid);
+  --color-prio-high-fg: var(--cp-prio-high-fg);
+  --color-prio-high-bg: var(--cp-prio-high-bg);
+  --color-prio-high-solid: var(--cp-prio-high-solid);
+  --color-prio-medium-fg: var(--cp-prio-medium-fg);
+  --color-prio-medium-bg: var(--cp-prio-medium-bg);
+  --color-prio-medium-solid: var(--cp-prio-medium-solid);
+  --color-prio-low-fg: var(--cp-prio-low-fg);
+  --color-prio-low-bg: var(--cp-prio-low-bg);
+  --color-prio-low-solid: var(--cp-prio-low-solid);
+
+  /* AI + demo */
+  --color-ai-bg: var(--cp-ai-bg);
+  --color-ai-border: var(--cp-ai-border);
+  --color-demo-bg: var(--cp-demo-bg);
+  --color-demo-fg: var(--cp-demo-fg);
+
+  /* Radii */
+  --radius-xs: var(--cp-radius-xs);
+  --radius-sm: var(--cp-radius-sm);
+  --radius-md: var(--cp-radius-md);
+  --radius-lg: var(--cp-radius-lg);
+  --radius-full: var(--cp-radius-full);
+
+  /* Shadows */
+  --shadow-e1: var(--cp-shadow-1);
+  --shadow-e2: var(--cp-shadow-2);
+  --shadow-e3: var(--cp-shadow-3);
+
+  /* Typography — Geist via next/font (geist package), wired in layout.tsx */
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI",
+    Roboto, "Noto Sans", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
+    monospace;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--cp-bg);
+    color: var(--cp-text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.625;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Single, consistent focus treatment (§15.1 — marigold fails 3:1, so primary). */
+  :focus-visible {
+    outline: 2px solid var(--cp-primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Numeric alignment for scores, metrics, tables. */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Auth dark context — uses --cp-auth-* tokens for the login overlay. */
+@layer components {
+  .auth-card {
+    background-color: var(--cp-auth-card-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--cp-auth-card-border);
+    box-shadow: var(--cp-auth-card-shadow);
+  }
+  .auth-input {
+    width: 100%;
+    height: 2.75rem;
+    padding: 0 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--cp-auth-input-border);
+    background-color: var(--cp-auth-input-bg);
+    font-size: 0.9375rem;
+    color: var(--cp-text);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .auth-input::placeholder {
+    color: var(--cp-auth-text-slate-light);
+  }
+  .auth-input:focus {
+    border-color: var(--cp-primary);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+  }
+  .auth-input-icon { color: var(--cp-auth-text-slate-light); }
+  .auth-text-white-70 { color: var(--cp-auth-text-white-70); }
+  .auth-text-slate { color: var(--cp-auth-text-slate); }
+  .auth-text-slate-light { color: var(--cp-auth-text-slate-light); }
+  .auth-tabs-bg { background-color: var(--cp-auth-tabs-bg); }
+  .auth-secure-badge {
+    background-color: var(--cp-auth-badge-bg);
+    color: var(--cp-primary);
+  }
+  .auth-badge-circle { background-color: var(--cp-auth-badge-bg); }
+  .auth-error-box {
+    background-color: var(--cp-auth-error-bg);
+    color: var(--cp-danger);
+  }
+  .auth-divider { background-color: var(--cp-auth-divider); }
+  .auth-social-btn {
+    border-color: var(--cp-auth-divider);
+    color: var(--cp-text-secondary);
+  }
+  .auth-social-btn:hover { background-color: var(--cp-auth-input-bg); }
+  .auth-checkbox { accent-color: var(--cp-primary); }
+  .auth-page-root { background-color: var(--cp-auth-bg); }
+  .auth-page-glow {
+    background:
+      radial-gradient(ellipse at 70% 50%, rgba(15,118,110,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 30% 80%, rgba(32,220,203,0.08) 0%, transparent 50%);
+  }
+  .auth-hero-heading { color: var(--cp-auth-text-white); }
+  .auth-hero-accent { color: var(--cp-auth-accent); }
+}
+
+/* Restrained glassmorphism — ONLY for floating map controls, overlays and
+   selected nav elements (never full-site). Falls back to a solid surface where
+   backdrop-filter is unsupported. */
+@layer components {
+  .cp-glass {
+    background-color: var(--cp-surface);
+    border: 1px solid var(--cp-glass-border);
+    box-shadow: var(--cp-glass-shadow);
+  }
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .cp-glass {
+      background-color: var(--cp-glass-bg);
+      -webkit-backdrop-filter: blur(var(--cp-glass-blur)) saturate(140%);
+      backdrop-filter: blur(var(--cp-glass-blur)) saturate(140%);
+    }
+  }
+}
+
+/* Shimmer skeleton animation — dark variant for navy surfaces */
+@layer components {
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    border-radius: 6px;
+  }
+  .skeleton-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.04) 40%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0.04) 60%,
+      transparent 100%
+    );
+    animation: shimmer 2s infinite ease-in-out;
+  }
+  .skeleton-shimmer-light {
+    position: relative;
+    overflow: hidden;
+    border-radius: 6px;
+  }
+  .skeleton-shimmer-light::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(0, 0, 0, 0.03) 40%,
+      rgba(0, 0, 0, 0.06) 50%,
+      rgba(0, 0, 0, 0.03) 60%,
+      transparent 100%
+    );
+    animation: shimmer 2s infinite ease-in-out;
+  }
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ── Premium motion effects ── */
+@layer components {
+  /* Aurora background blobs */
+  .aurora-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.5;
+    animation: aurora-drift 12s ease-in-out infinite alternate;
+  }
+  .aurora-blob-1 {
+    width: 500px;
+    height: 500px;
+    top: -20%;
+    right: 10%;
+    background: radial-gradient(circle, rgba(15, 118, 110, 0.25), transparent 70%);
+  }
+  .aurora-blob-2 {
+    width: 400px;
+    height: 400px;
+    bottom: 10%;
+    left: 20%;
+    background: radial-gradient(circle, rgba(32, 220, 203, 0.15), transparent 70%);
+    animation-delay: -4s;
+    animation-duration: 15s;
+  }
+  .aurora-blob-3 {
+    width: 350px;
+    height: 350px;
+    top: 40%;
+    right: 30%;
+    background: radial-gradient(circle, rgba(15, 118, 110, 0.12), transparent 70%);
+    animation-delay: -8s;
+    animation-duration: 18s;
+  }
+
+  /* Border beam — traveling gradient along card edges */
+  .border-beam-glow {
+    width: var(--beam-size);
+    height: var(--beam-size);
+    background: radial-gradient(circle, var(--cp-primary), var(--cp-auth-accent), transparent 60%);
+    opacity: 0.7;
+    border-radius: 50%;
+    offset-path: rect(0 100% 100% 0 round 0);
+    animation: border-beam-travel var(--beam-duration) linear var(--beam-delay) infinite;
+  }
+
+  /* Shimmer button effects */
+  .shimmer-btn-shine {
+    background: linear-gradient(
+      120deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.15) 48%,
+      rgba(255, 255, 255, 0.2) 50%,
+      rgba(255, 255, 255, 0.15) 52%,
+      transparent 70%
+    );
+    animation: shimmer-slide 3s ease-in-out infinite;
+  }
+  .shimmer-btn-glow {
+    background: radial-gradient(
+      ellipse at center,
+      rgba(15, 118, 110, 0.3) 0%,
+      transparent 70%
+    );
+    border-radius: inherit;
+  }
+
+  /* Shiny text — traveling highlight */
+  .shiny-text {
+    background: linear-gradient(
+      120deg,
+      currentColor 0%,
+      currentColor 40%,
+      var(--cp-auth-accent) 50%,
+      currentColor 60%,
+      currentColor 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shiny-text-pan 4s ease-in-out infinite;
+  }
+}
+
+@keyframes aurora-drift {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(40px, -30px) scale(1.1); }
+}
+@keyframes border-beam-travel {
+  0% { offset-distance: 0%; }
+  100% { offset-distance: 100%; }
+}
+@keyframes shimmer-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes shiny-text-pan {
+  0%, 100% { background-position: 200% 0; }
+  50% { background-position: 0% 0; }
+}
+
+/* Respect reduced-motion globally (§15.6). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
