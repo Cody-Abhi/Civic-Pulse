@@ -10,6 +10,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const idToken = body.idToken;
+    const next = body.next;
+    const homeWardId = body.homeWardId;
 
     if (!idToken || typeof idToken !== "string") {
       return NextResponse.json(
@@ -24,6 +26,22 @@ export async function POST(req: NextRequest) {
     }
 
     const { user, cookieValue, maxAgeSeconds } = await createSessionCookie(idToken);
+    
+    // If homeWardId was provided during registration and user hasn't set one yet
+    if (homeWardId && typeof homeWardId === "string" && !user.homeWardId) {
+      try {
+        const { getAdminFirestore } = await import("@/server/clients/firebase-admin");
+        const firestore = getAdminFirestore();
+        await firestore.collection("users").doc(user.uid).update({
+          homeWardId,
+          updatedAt: new Date().toISOString(),
+        });
+        user.homeWardId = homeWardId;
+      } catch {
+        // Non-blocking update failure
+      }
+    }
+
     const env = getServerEnv();
     const cookieStore = await cookies();
 
@@ -37,21 +55,47 @@ export async function POST(req: NextRequest) {
       path: "/",
     });
 
+    // Validate next redirect to prevent open-redirect attacks (§UI-03 acceptance)
+    let destination = getRoleHome(user.role);
+    if (typeof next === "string" && next.startsWith("/") && !next.startsWith("//") && !next.includes(":")) {
+      destination = next;
+    }
+
     return NextResponse.json({
       ok: true,
       role: user.role,
-      home: getRoleHome(user.role),
+      home: destination,
       user: {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
         role: user.role,
         departmentId: user.departmentId,
+        homeWardId: user.homeWardId,
       },
     });
   } catch (err) {
+    if (err instanceof Error && err.message === "ACCOUNT_SUSPENDED") {
+      return NextResponse.json(
+        {
+          error: {
+            code: "ACCOUNT_SUSPENDED",
+            message: "Your account has been suspended.",
+          },
+        },
+        { status: 403 },
+      );
+    }
     const message = err instanceof Error ? err.message : "Failed to establish session";
-    return NextResponse.json({ error: message }, { status: 401 });
+    return NextResponse.json(
+      {
+        error: {
+          code: "UNAUTHORIZED",
+          message,
+        },
+      },
+      { status: 401 },
+    );
   }
 }
 

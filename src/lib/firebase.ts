@@ -31,13 +31,41 @@ if (isFirebaseClientConfigured()) {
 
   if (clientEnv.USE_EMULATORS && !emulatorsConnected && typeof window !== "undefined") {
     try {
-      connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
-      connectFirestoreEmulator(db, "localhost", 8080);
+      const emulatorHost = window.location.hostname === "127.0.0.1" ? "127.0.0.1" : "localhost";
+      connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
+      connectFirestoreEmulator(db, emulatorHost, 8080);
       emulatorsConnected = true;
     } catch {
       // Emulators may already be connected in fast refresh
     }
   }
+}
+
+/**
+ * Returns the client Auth instance, ensuring initialization.
+ */
+export function getFirebaseAuth(): Auth {
+  if (!auth) {
+    if (!app && isFirebaseClientConfigured()) {
+      app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    }
+    if (app) {
+      auth = getAuth(app);
+      if (clientEnv.USE_EMULATORS && !emulatorsConnected && typeof window !== "undefined") {
+        try {
+          const emulatorHost = window.location.hostname === "127.0.0.1" ? "127.0.0.1" : "localhost";
+          connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
+          emulatorsConnected = true;
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }
+  if (!auth) {
+    throw new Error("Firebase Auth is not configured. Set NEXT_PUBLIC_FIREBASE_* in environment.");
+  }
+  return auth;
 }
 
 /**

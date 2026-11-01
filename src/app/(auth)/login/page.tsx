@@ -1,14 +1,27 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CivicPulseLogo } from "@/components/auth/civicpulse-logo";
 import { CitySkyline } from "@/components/auth/city-skyline";
 import { AuthForm } from "@/components/auth/auth-form";
-import { isFirebaseClientConfigured } from "@/lib/env";
+import { DemoAccountPanel } from "@/components/auth/demo-account-panel";
+import { clientEnv, isFirebaseClientConfigured } from "@/lib/env";
+import {
+  loginWithEmail,
+  loginWithGoogle,
+  registerWithEmail,
+  requestPasswordReset,
+  mapAuthError,
+} from "@/lib/auth-client";
 import { ShieldCheck, Cpu, MapPin } from "lucide-react";
 import { Icon } from "@/components/ui/icon";
 
-export default function LoginPage() {
+function LoginContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextParam = searchParams?.get("next");
   const configured = isFirebaseClientConfigured();
 
   const handleSubmit = async (data: {
@@ -16,18 +29,43 @@ export default function LoginPage() {
     email: string;
     password: string;
     displayName?: string;
-  }) => {
-    void data;
-    return "Firebase Auth not yet wired. Complete T-04 to enable sign-in.";
+  }): Promise<string | undefined> => {
+    try {
+      if (data.mode === "login") {
+        const session = await loginWithEmail(data.email, data.password, nextParam);
+        router.replace(session.home);
+        return undefined;
+      } else {
+        await registerWithEmail({
+          email: data.email,
+          pass: data.password,
+          displayName: data.displayName || "",
+        });
+        router.push("/verify-email");
+        return undefined;
+      }
+    } catch (err) {
+      return mapAuthError(err);
+    }
   };
 
-  const handleForgotPassword = async (email: string) => {
-    void email;
-    return "Firebase Auth not yet wired. Complete T-04 to enable password reset.";
+  const handleForgotPassword = async (email: string): Promise<string | undefined> => {
+    try {
+      await requestPasswordReset(email);
+      return undefined;
+    } catch (err) {
+      return mapAuthError(err);
+    }
   };
 
-  const handleGoogleSignIn = async () => {
-    return "Google sign-in not yet configured. Complete T-04 to enable.";
+  const handleGoogleSignIn = async (): Promise<string | undefined> => {
+    try {
+      const session = await loginWithGoogle(nextParam);
+      router.replace(session.home);
+      return undefined;
+    } catch (err) {
+      return mapAuthError(err);
+    }
   };
 
   return (
@@ -51,15 +89,16 @@ export default function LoginPage() {
 
       {/* Main split layout */}
       <div className="relative z-10 flex min-h-dvh w-full flex-col md:flex-row">
-        {/* Left Side: Auth Card */}
-        <div className="flex w-full flex-col items-center justify-center px-6 py-24 md:w-[48%] md:px-12 lg:w-[42%] lg:px-16">
-          <div className="w-full max-w-[420px]">
+        {/* Left Side: Auth Card & Demo Panel */}
+        <div className="flex w-full flex-col items-center justify-center px-6 py-20 md:w-[48%] md:px-12 lg:w-[42%] lg:px-16 overflow-y-auto">
+          <div className="w-full max-w-[420px] flex flex-col gap-5">
             <AuthForm
               onSubmit={handleSubmit}
               onForgotPassword={handleForgotPassword}
               onGoogleSignIn={configured ? handleGoogleSignIn : undefined}
               firebaseConfigured={configured}
             />
+            {clientEnv.DEMO_MODE && <DemoAccountPanel />}
           </div>
         </div>
 
@@ -131,5 +170,19 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-dvh flex items-center justify-center bg-secondary text-white text-sm">
+          Loading authentication…
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

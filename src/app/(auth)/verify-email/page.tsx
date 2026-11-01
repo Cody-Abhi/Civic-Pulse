@@ -7,15 +7,39 @@ import { MailCheck, RefreshCw, Loader2, AlertCircle, ArrowLeft } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { CivicPulseLogo } from "@/components/auth/civicpulse-logo";
+import {
+  checkEmailVerifiedStatus,
+  resendVerification,
+  signOutClient,
+  mapAuthError,
+} from "@/lib/auth-client";
+import { getFirebaseAuth } from "@/lib/firebase";
 
 export default function VerifyEmailPage() {
   const router = useRouter();
-  const [email] = React.useState("citizen@example.com"); // Replaced dynamically on session
+  const [email, setEmail] = React.useState<string>("citizen@example.com");
   const [checking, setChecking] = React.useState(false);
   const [resending, setResending] = React.useState(false);
   const [cooldown, setCooldown] = React.useState(60);
   const [message, setMessage] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    try {
+      const auth = getFirebaseAuth();
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        if (user?.email) {
+          setEmail(user.email);
+          if (user.emailVerified) {
+            router.replace("/citizen/dashboard");
+          }
+        }
+      });
+      return () => unsubscribe();
+    } catch {
+      // ignore
+    }
+  }, [router]);
 
   React.useEffect(() => {
     if (cooldown <= 0) return;
@@ -31,14 +55,16 @@ export default function VerifyEmailPage() {
     setChecking(true);
 
     try {
-      // In production Firebase client:
-      // await auth.currentUser?.reload();
-      // if (auth.currentUser?.emailVerified) { router.replace('/citizen/dashboard'); }
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      // For verification test flow:
-      setError("We still can't see the verification. Please open the link in the verification email sent to your inbox, then try again.");
-    } catch {
-      setError("Unable to check verification status. Please check your internet connection.");
+      const result = await checkEmailVerifiedStatus();
+      if (result.verified) {
+        router.replace(result.home || "/citizen/dashboard");
+      } else {
+        setError(
+          "We still can't see the verification. Please open the link in the verification email sent to your inbox, then try again.",
+        );
+      }
+    } catch (err) {
+      setError(mapAuthError(err));
     } finally {
       setChecking(false);
     }
@@ -51,17 +77,20 @@ export default function VerifyEmailPage() {
     setResending(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      setMessage("Verification email resent! Please check your spam folder if it doesn't arrive within 2 minutes.");
+      await resendVerification();
+      setMessage(
+        "Verification email resent! Please check your inbox and spam folder.",
+      );
       setCooldown(60);
-    } catch {
-      setError("Failed to resend verification email. Please try again later.");
+    } catch (err) {
+      setError(mapAuthError(err));
     } finally {
       setResending(false);
     }
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    await signOutClient();
     router.replace("/login");
   };
 
