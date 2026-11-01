@@ -72,12 +72,25 @@ export interface Department {
   description?: string;
   categories: ComplaintCategory[];
   active: boolean;
+  authoritiesCount?: number;
+  openComplaints?: number;
+  overdueComplaints?: number;
+  slaComplianceRate?: number;
   metrics?: {
     open: number;
     overdue: number;
     medianResolutionHours30d: number | null;
     slaCompliance30d: number | null;
   };
+}
+
+export interface WardSummary {
+  wardId: string;
+  wardName: string;
+  totalComplaints: number;
+  openComplaints: number;
+  resolvedComplaints: number;
+  overdueComplaints: number;
 }
 
 export interface GeoPoint {
@@ -217,3 +230,53 @@ export interface ComplaintActivity {
   visibleToReporter: boolean;
   departmentId: string;
 }
+
+export interface AdminUser {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: Role;
+  departmentId: string | null;
+  status: "active" | "suspended";
+  emailVerified: boolean;
+  homeWardId: string | null;
+  complaintsFiled: number;
+  createdAt: string;
+  lastSignInAt?: string | undefined;
+}
+
+export interface AuditLog {
+  id: string;
+  action: string;
+  actorUid: string;
+  actorEmail: string;
+  actorRole: Role;
+  targetId: string;
+  targetType: "user" | "complaint" | "department" | "category" | "settings";
+  summary: string;
+  before?: Record<string, unknown> | null | undefined;
+  after?: Record<string, unknown> | null | undefined;
+  ipHash?: string | undefined;
+  createdAt: string;
+}
+
+export interface SystemSettings {
+  weights: Weights;
+  bands: Bands;
+  duplicates: {
+    radiusM: number;
+    windowDays: number;
+    likely: number;
+    possible: number;
+  };
+  ai: {
+    paused: boolean;
+    dailyBudget: number;
+    userDailyLimit: number;
+  };
+  rateLimits: {
+    complaintsPerUserPerDay: number;
+    supportsPerUserPerDay: number;
+  };
+}
+

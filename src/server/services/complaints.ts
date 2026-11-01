@@ -63,6 +63,27 @@ function ensureSeedLoaded() {
   }
 }
 
+export function reloadSeedComplaints(): number {
+  MEMORY_COMPLAINTS.clear();
+  MEMORY_ACTIVITIES.clear();
+  sequenceCounter = 240;
+  try {
+    const p = path.join(process.cwd(), "fixtures", "seed", "complaints.json");
+    if (fs.existsSync(p)) {
+      const raw = fs.readFileSync(p, "utf-8");
+      const list = JSON.parse(raw) as Complaint[];
+      list.forEach((c) => {
+        MEMORY_COMPLAINTS.set(c.id, c);
+        MEMORY_COMPLAINTS.set(c.ref, c);
+      });
+      return list.length;
+    }
+  } catch (e) {
+    console.warn("Could not reload seed complaints file:", e);
+  }
+  return 0;
+}
+
 export function addInMemoryComplaint(complaint: Complaint) {
   MEMORY_COMPLAINTS.set(complaint.id, complaint);
   MEMORY_COMPLAINTS.set(complaint.ref, complaint);
@@ -74,6 +95,43 @@ export function getAllInMemoryComplaints(): Complaint[] {
   const unique = new Map<string, Complaint>();
   MEMORY_COMPLAINTS.forEach((c) => unique.set(c.id, c));
   return Array.from(unique.values());
+}
+
+export async function getComplaints(): Promise<Complaint[]> {
+  return getAllInMemoryComplaints();
+}
+
+export async function getWardStats(): Promise<import("@/domain/types").WardSummary[]> {
+  const all = getAllInMemoryComplaints();
+  const map = new Map<string, import("@/domain/types").WardSummary>();
+  const now = Date.now();
+
+  all.forEach((c) => {
+    const wardId = c.location.wardId || "ward-blr-central";
+    const wardName = c.location.wardName || "Central Bengaluru";
+    if (!map.has(wardId)) {
+      map.set(wardId, {
+        wardId,
+        wardName,
+        totalComplaints: 0,
+        openComplaints: 0,
+        resolvedComplaints: 0,
+        overdueComplaints: 0,
+      });
+    }
+    const stat = map.get(wardId)!;
+    stat.totalComplaints++;
+    if (c.status === "RESOLVED" || c.status === "CLOSED") {
+      stat.resolvedComplaints++;
+    } else {
+      stat.openComplaints++;
+      if (new Date(c.slaDueAt).getTime() < now) {
+        stat.overdueComplaints++;
+      }
+    }
+  });
+
+  return Array.from(map.values()).sort((a, b) => b.totalComplaints - a.totalComplaints);
 }
 
 export function getCityMetrics() {
