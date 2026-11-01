@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { Eye, EyeOff, Shield, Loader2, Mail, Lock } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -274,13 +275,12 @@ export function AuthForm({
               />
               Remember me
             </label>
-            <button
-              type="button"
-              onClick={() => { setForgotMode(true); setError(null); }}
+            <Link
+              href="/forgot-password"
               className="text-sm font-medium text-primary hover:underline"
             >
               Forgot Password?
-            </button>
+            </Link>
           </div>
         )}
 
