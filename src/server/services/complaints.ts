@@ -11,6 +11,7 @@ import type {
   ComplaintStatus,
   RejectReason,
   Role,
+  Severity,
 } from "@/domain/types";
 import { categorySchema, hazardFlagSchema, durationBucketSchema, affectedScaleSchema } from "@/domain/schemas";
 import { redactPII } from "@/domain/redact";
@@ -213,6 +214,17 @@ export async function createComplaint(
   const ref = generateReference();
   const nowIso = new Date(nowMs).toISOString();
 
+  let linkedAnalysisId: string | null = null;
+  if (validated.analysisToken) {
+    try {
+      const payload = Buffer.from(validated.analysisToken.split(".")[0] || "", "base64url").toString("utf-8");
+      const [aId] = payload.split(":");
+      if (aId) linkedAnalysisId = aId;
+    } catch {
+      // ignore
+    }
+  }
+
   const complaint: Complaint = {
     id,
     ref,
@@ -258,7 +270,7 @@ export async function createComplaint(
     priority: priorityResult,
     slaHours,
     slaDueAt: new Date(nowMs + slaHours * 3600 * 1000).toISOString(),
-    aiAnalysisId: null,
+    aiAnalysisId: linkedAnalysisId,
     aiStatus: validated.categorySource === "ai" ? "gemini" : "fallback",
     evidence: [],
     resolution: null,
@@ -514,6 +526,59 @@ export async function supportComplaint(
 }
 
 /**
+ * Recomputes and persists updated priority score for a complaint
+ */
+export async function updateComplaintPriority(id: string) {
+  const all = await getComplaints();
+  const complaint = all.find((c) => c.id === id);
+  if (!complaint) return null;
+
+  const catConfig = CATEGORY_CONFIG[complaint.category];
+  const nowMs = Date.now();
+  const createdMs = new Date(complaint.createdAt).getTime();
+
+  const newPriority = computePriority({
+    baseSeverity: catConfig.baseSeverity,
+    verifiedSeverity: complaint.verifiedSeverity,
+    hazardFlags: complaint.hazardFlags,
+    independentReporterCount: complaint.independentReporterCount || 1,
+    createdAtMs: createdMs,
+    nowMs,
+    slaHours: complaint.slaHours,
+    affectedScale: complaint.affectedScale,
+    nearbyOpenClusters: 0,
+    timeSensitive: catConfig.timeSensitive,
+    seasonMonths: catConfig.seasonMonths,
+    adjustment: complaint.priority?.adjustment || 0,
+    weights: DEFAULT_WEIGHTS,
+    bands: DEFAULT_BANDS,
+    weightsVersion: DEFAULT_WEIGHTS_VERSION,
+    provisional: false,
+  });
+
+  complaint.priority = newPriority;
+  complaint.updatedAt = new Date().toISOString();
+  addInMemoryComplaint(complaint);
+
+  try {
+    const firestore = getAdminFirestore();
+    await firestore.collection("complaints").doc(id).update({
+      priority: complaint.priority,
+      updatedAt: complaint.updatedAt,
+    });
+    if (complaint.visibility === "public") {
+      await firestore.collection("publicComplaints").doc(id).update({
+        priority: complaint.priority,
+      });
+    }
+  } catch (err) {
+    console.warn("Firestore update skipped/fallback:", err);
+  }
+
+  return complaint;
+}
+
+/**
  * Updates complaint lifecycle status with activity logging
  */
 export async function updateComplaintStatus(
@@ -586,6 +651,42 @@ export async function updateComplaintStatus(
     console.warn("Firestore update skipped/fallback:", err);
   }
 
+  return complaint;
+}
+
+/**
+ * Updates authority verified severity (1-5) and recalculates priority score
+ */
+export async function setVerifiedSeverity(
+  refOrId: string,
+  severity: Severity,
+  actorUid = "authority-agent",
+): Promise<Complaint> {
+  ensureSeedLoaded();
+  const complaint = await getComplaint(refOrId);
+  if (!complaint) throw new Error("Complaint not found");
+
+  complaint.verifiedSeverity = severity;
+  complaint.updatedAt = new Date().toISOString();
+
+  const activity: ComplaintActivity = {
+    id: crypto.randomUUID(),
+    complaintId: complaint.id,
+    actorUid,
+    actorName: "Ward Engineer",
+    actorRole: "authority",
+    action: "SEVERITY_VERIFIED",
+    note: `Authority verified severity updated to level ${severity}/5`,
+    createdAt: complaint.updatedAt,
+    visibleToReporter: true,
+    departmentId: complaint.departmentId,
+  };
+
+  const activities = MEMORY_ACTIVITIES.get(complaint.id) || [];
+  activities.push(activity);
+  MEMORY_ACTIVITIES.set(complaint.id, activities);
+
+  await updateComplaintPriority(complaint.id);
   return complaint;
 }
 

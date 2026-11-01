@@ -11,14 +11,17 @@ import {
   AlertTriangle,
   CheckCircle2,
   Loader2,
-  Radio,
   Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ReferenceChip } from "@/components/ui/reference-chip";
 import { PriorityReceipt } from "@/components/ai/priority-receipt";
+import { AIAnalysisCard } from "@/components/ai/ai-analysis-card";
+import { DuplicateRadar } from "@/components/ai/duplicate-radar";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { computePriority } from "@/domain/priority";
+import type { AIAnalysisOutput } from "@/domain/schemas";
+import type { DuplicateCandidateResult } from "@/server/services/ai";
 import {
   CATEGORY_CONFIG,
   DEFAULT_WEIGHTS,
@@ -116,6 +119,107 @@ export default function ReportWizardPage() {
     publicUrl: string | null;
   } | null>(null);
 
+  // Live AI Analysis State (§27)
+  const [aiAnalysis, setAiAnalysis] = React.useState<{
+    id: string;
+    source: "gemini" | "fallback";
+    output: AIAnalysisOutput;
+    model?: string;
+    latencyMs?: number;
+    fallbackReason?: string | null;
+  } | null>(null);
+  const [aiLoading, setAiLoading] = React.useState<boolean>(false);
+  const [analysisToken, setAnalysisToken] = React.useState<string | null>(null);
+  const [useAiCategory, setUseAiCategory] = React.useState<boolean>(true);
+
+  // Live Duplicate Radar State (§28)
+  const [duplicates, setDuplicates] = React.useState<DuplicateCandidateResult[]>([]);
+  const [duplicatesLoading, setDuplicatesLoading] = React.useState<boolean>(false);
+  const [isAddingVoice, setIsAddingVoice] = React.useState<string | null>(null);
+  const [supportedIds, setSupportedIds] = React.useState<string[]>([]);
+
+  // Trigger non-blocking AI draft analysis
+  const triggerAiAnalysis = React.useCallback(async () => {
+    if (!form.description.trim() || form.description.length < 5) return;
+    setAiLoading(true);
+    try {
+      const res = await fetch("/api/ai/analyze-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: form.title || undefined,
+          description: form.description,
+          categoryHint: form.category,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiAnalysis(data.analysis);
+        setAnalysisToken(data.analysisToken);
+        if (data.analysis?.output?.predictedCategory && useAiCategory) {
+          setForm((prev) => ({
+            ...prev,
+            category: data.analysis.output.predictedCategory as ComplaintCategory,
+          }));
+        }
+      }
+    } catch {
+      // AI failure never blocks citizen flow (§27.6)
+    } finally {
+      setAiLoading(false);
+    }
+  }, [form.description, form.title, form.category, useAiCategory]);
+
+  // Trigger Duplicate Radar check
+  const triggerDuplicateCheck = React.useCallback(async () => {
+    setDuplicatesLoading(true);
+    try {
+      const res = await fetch("/api/complaints/duplicates/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lat: form.lat,
+          lng: form.lng,
+          category: form.category,
+          text: `${form.title} ${form.description}`,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDuplicates(data.candidates || []);
+      }
+    } catch {
+      // Duplicate check failure never blocks submission
+    } finally {
+      setDuplicatesLoading(false);
+    }
+  }, [form.lat, form.lng, form.category, form.title, form.description]);
+
+  // Support nearby duplicate ("Add my voice instead")
+  const handleAddVoice = async (candidateId: string) => {
+    setIsAddingVoice(candidateId);
+    try {
+      const res = await fetch(`/api/complaints/${candidateId}/support`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": `support-${candidateId}`,
+        },
+      });
+      if (res.ok) {
+        setSupportedIds((prev) => [...prev, candidateId]);
+        discardDraft();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to add support");
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Support request failed");
+    } finally {
+      setIsAddingVoice(null);
+    }
+  };
+
   const restoreDraft = () => {
     try {
       const saved = sessionStorage.getItem("cp:draft:citizen");
@@ -201,6 +305,8 @@ export default function ReportWizardPage() {
     }
   };
 
+  const idempotencyKeyRef = React.useRef<string>("submit-client-token");
+
   // Submission handler
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -209,13 +315,14 @@ export default function ReportWizardPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Idempotency-Key": `submit-${Date.now()}`,
+          "Idempotency-Key": idempotencyKeyRef.current,
         },
         body: JSON.stringify({
           title: form.title || undefined,
           description: form.description,
           category: form.category,
-          categorySource: "user",
+          categorySource: aiAnalysis && aiAnalysis.output.predictedCategory === form.category ? "ai" : "user",
+          analysisToken: analysisToken || undefined,
           location: {
             lat: form.lat,
             lng: form.lng,
@@ -512,7 +619,10 @@ export default function ReportWizardPage() {
               <span>Back</span>
             </Button>
             <Button
-              onClick={() => setStep(3)}
+              onClick={() => {
+                triggerAiAnalysis();
+                setStep(3);
+              }}
               disabled={form.description.trim().length < 20}
               className="gap-2"
             >
@@ -613,7 +723,14 @@ export default function ReportWizardPage() {
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               <span>Back</span>
             </Button>
-            <Button onClick={() => setStep(5)} className="gap-2">
+            <Button
+              onClick={() => {
+                if (!aiAnalysis) triggerAiAnalysis();
+                triggerDuplicateCheck();
+                setStep(5);
+              }}
+              className="gap-2"
+            >
               <span>Next: AI Review</span>
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Button>
@@ -624,60 +741,89 @@ export default function ReportWizardPage() {
       {/* Step 5: Advisory AI & Duplicate Radar */}
       {step === 5 && (
         <div className="flex flex-col gap-6">
-          {/* Advisory Gemini Card */}
-          <div className="rounded-md border border-primary/30 bg-primary/5 p-6 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
+          {/* Advisory Gemini Card or Loading State */}
+          {aiLoading ? (
+            <div className="rounded-xl border border-primary/25 bg-primary/5 p-6 flex flex-col items-center justify-center gap-3">
+              <div className="flex items-center gap-2 text-primary">
+                <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                <span className="text-sm font-semibold text-ink">Analyzing report details with Gemini…</span>
+              </div>
+              <p className="text-xs text-muted">Detecting civic issue category, keywords and initial advisory severity</p>
+            </div>
+          ) : aiAnalysis ? (
+            <div className="flex flex-col gap-4">
+              <AIAnalysisCard
+                analysis={aiAnalysis.output}
+                source={aiAnalysis.source}
+                model={aiAnalysis.model}
+                latencyMs={aiAnalysis.latencyMs}
+                fallbackReason={aiAnalysis.fallbackReason}
+              />
+
+              {/* Category Recommendation / Override Choice */}
+              {aiAnalysis.output.predictedCategory !== form.category && (
+                <div className="rounded-lg border border-border bg-surface p-4 flex flex-col gap-3">
+                  <span className="text-xs font-semibold text-ink">Category Alignment</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUseAiCategory(true);
+                        setForm((prev) => ({
+                          ...prev,
+                          category: aiAnalysis.output.predictedCategory as ComplaintCategory,
+                        }));
+                      }}
+                      className={`flex items-center gap-2 rounded-md border p-3 text-left transition-colors ${
+                        form.category === aiAnalysis.output.predictedCategory
+                          ? "border-primary bg-primary/10 font-bold text-ink"
+                          : "border-border bg-canvas text-ink-muted hover:bg-surface-muted"
+                      }`}
+                    >
+                      <Sparkles className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
+                      <span>Use AI suggestion: {aiAnalysis.output.predictedCategory.replace(/_/g, " ")}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setUseAiCategory(false)}
+                      className={`flex items-center gap-2 rounded-md border p-3 text-left transition-colors ${
+                        form.category !== aiAnalysis.output.predictedCategory
+                          ? "border-primary bg-primary/10 font-bold text-ink"
+                          : "border-border bg-canvas text-ink-muted hover:bg-surface-muted"
+                      }`}
+                    >
+                      <Check className="h-4 w-4 text-muted shrink-0" aria-hidden="true" />
+                      <span>Keep my choice: {form.category.replace(/_/g, " ")}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
-                <h3 className="font-semibold text-ink text-base">Advisory AI Analysis</h3>
+                <h3 className="font-semibold text-ink text-sm sm:text-base">Advisory AI Ready</h3>
               </div>
-              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                Gemini Advisory (High 88%)
-              </span>
+              <p className="text-xs text-ink-muted leading-relaxed">
+                Click below to analyse your draft or proceed directly to confirmation. AI suggestions are strictly advisory and assist municipal dispatchers.
+              </p>
+              <Button size="sm" variant="outline" onClick={triggerAiAnalysis} className="self-start gap-1.5 text-xs">
+                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Run Analysis Now</span>
+              </Button>
             </div>
-
-            <p className="text-xs text-ink-muted leading-relaxed">
-              AI suggestions are strictly advisory and assist municipal dispatchers. The priority score is computed by transparent deterministic code, not an AI black box.
-            </p>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 pt-2">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] text-muted">Detected Category</span>
-                <span className="text-sm font-semibold text-ink">{form.category.replace(/_/g, " ")}</span>
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] text-muted">Assigned Department</span>
-                <span className="text-sm font-semibold text-ink">
-                  {CATEGORY_CONFIG[form.category]?.departmentId.toUpperCase()}
-                </span>
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] text-muted">Standard SLA</span>
-                <span className="text-sm font-semibold text-ink">
-                  {CATEGORY_CONFIG[form.category]?.slaHours} hours
-                </span>
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] text-muted">Estimated Priority</span>
-                <span className="text-sm font-semibold text-primary">{livePriority.score} / 100</span>
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* Duplicate Radar */}
-          <div className="rounded-md border border-border bg-surface p-5 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Radio className="h-4 w-4 text-primary" aria-hidden="true" />
-                <h3 className="font-semibold text-ink text-sm">Duplicate Radar</h3>
-              </div>
-              <span className="text-xs text-muted">300m radius check</span>
-            </div>
-
-            <p className="text-xs text-muted">
-              No active duplicate reports found within 300m matching this description. Your report will be registered as a primary ticket.
-            </p>
-          </div>
+          <DuplicateRadar
+            candidates={duplicates}
+            loading={duplicatesLoading}
+            onAddVoice={handleAddVoice}
+            isAddingVoice={isAddingVoice}
+            supportedIds={supportedIds}
+          />
 
           <div className="flex justify-between pt-4">
             <Button variant="outline" onClick={() => setStep(4)} className="gap-2">

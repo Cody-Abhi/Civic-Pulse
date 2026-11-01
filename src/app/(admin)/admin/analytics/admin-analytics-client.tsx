@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ChartFrame } from "@/components/data/chart-frame";
 import { MetricStrip, type MetricStripItem } from "@/components/data/metric-strip";
+import { AIInsightsPanel } from "@/components/ai/ai-insights-panel";
 import type { Complaint, Department, WardSummary } from "@/domain/types";
 
 interface AdminAnalyticsClientProps {
@@ -83,6 +84,9 @@ export function AdminAnalyticsClient({
 
       {/* Metric Strip */}
       <MetricStrip items={metricItems} />
+
+      {/* Grounded AI Civic Insights (§31.4) */}
+      <AIInsightsPanel scope={selectedDeptId === "all" ? "city:blr" : `dept:${selectedDeptId}`} />
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">

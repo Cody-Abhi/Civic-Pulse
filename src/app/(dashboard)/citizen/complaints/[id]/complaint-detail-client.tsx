@@ -7,7 +7,6 @@ import {
   Clock,
   CheckCircle2,
   RotateCcw,
-  Sparkles,
   Building2,
   Share2,
   Check,
@@ -18,6 +17,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { PriorityBadge } from "@/components/ui/priority-badge";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { PriorityReceipt } from "@/components/ai/priority-receipt";
+import { AIAnalysisCard } from "@/components/ai/ai-analysis-card";
 import { Button } from "@/components/ui/button";
 import type { Complaint, ComplaintStatus, Severity } from "@/domain/types";
 
@@ -300,21 +300,21 @@ export function ComplaintDetailClient({ complaint: initialComplaint }: Complaint
           </div>
 
           {/* Advisory AI Card */}
-          <div className="rounded-md border border-primary/20 bg-primary/5 p-6 flex flex-col gap-3 shadow-xs">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
-                <h3 className="font-semibold text-ink text-sm">Advisory AI Analysis</h3>
-              </div>
-              <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                Gemini Advisory
-              </span>
-            </div>
-            <p className="text-xs text-ink-muted leading-relaxed">
-              Auto-classified into category <strong>{complaint.category.replace(/_/g, " ")}</strong> with priority score{" "}
-              <strong>{complaint.priority.score}/100</strong>. Priority is deterministic code based on 7 factors.
-            </p>
-          </div>
+          <AIAnalysisCard
+            variant="compact"
+            source={complaint.aiStatus === "fallback" ? "fallback" : "gemini"}
+            analysis={{
+              predictedCategory: complaint.category,
+              shortSummary: complaint.title,
+              extractedKeywords: [complaint.category.toLowerCase(), complaint.location.wardName || "bengaluru"],
+              detectedIssue: complaint.title,
+              suggestedSeverity: (complaint.verifiedSeverity || 3) as 1 | 2 | 3 | 4 | 5,
+              confidence: complaint.aiConfidence || 0.88,
+              recommendedDepartment: complaint.departmentName || "ROADS",
+              reasoning: `Triaged via municipal classification pipeline. Initial priority computed at ${complaint.priority.score}/100.`,
+              possibleDuplicateIndicators: [complaint.location.landmark || "Bengaluru"],
+            }}
+          />
 
           {/* Resolution section (if present) */}
           {complaint.resolution && (

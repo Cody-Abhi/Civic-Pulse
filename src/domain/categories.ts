@@ -104,8 +104,19 @@ export const DEFAULT_WEIGHTS: Weights = {
 /** Band thresholds (§29.2): CRITICAL ≥70, HIGH ≥50, MEDIUM ≥30, else LOW. */
 export const DEFAULT_BANDS: Bands = { critical: 70, high: 50, medium: 30 };
 
+export interface DuplicateSettings {
+  radiusM: number;
+  windowDays: number;
+  c0: number;
+  c1: number;
+  weights: { text: number; geo: number; category: number; time: number };
+  likely: number;
+  possible: number;
+  textFloorForLikely: number;
+}
+
 /** Duplicate detection settings (§28.4); overridable via systemSettings/duplicate. */
-export const DUPLICATE_SETTINGS = {
+export const DUPLICATE_SETTINGS: DuplicateSettings = {
   radiusM: 500,
   windowDays: 30,
   c0: 0.6,
@@ -114,8 +125,6 @@ export const DUPLICATE_SETTINGS = {
   likely: 0.8,
   possible: 0.65,
   textFloorForLikely: 0.5,
-} as const;
-
-export type DuplicateSettings = typeof DUPLICATE_SETTINGS;
+};
 
 export { CATEGORIES };

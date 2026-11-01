@@ -598,68 +598,96 @@ export function updateSystemSettings(
   return getSystemSettings();
 }
 
+export interface AiCallRecord {
+  id: string;
+  timestamp: string;
+  model: string;
+  category: string;
+  latencyMs: number;
+  tokens: number;
+  source: "gemini" | "fallback";
+  status: "success" | "error";
+  reason?: string;
+}
+
+const MEMORY_AI_CALLS: AiCallRecord[] = [
+  {
+    id: "call-001",
+    timestamp: new Date(Date.now() - 120000).toISOString(),
+    model: "gemini-3.8-flash",
+    category: "POTHOLE",
+    latencyMs: 680,
+    tokens: 1240,
+    source: "gemini",
+    status: "success",
+  },
+  {
+    id: "call-002",
+    timestamp: new Date(Date.now() - 340000).toISOString(),
+    model: "gemini-3.8-flash",
+    category: "GARBAGE",
+    latencyMs: 740,
+    tokens: 1180,
+    source: "gemini",
+    status: "success",
+  },
+  {
+    id: "call-003",
+    timestamp: new Date(Date.now() - 890000).toISOString(),
+    model: "keyword-classifier",
+    category: "STREETLIGHT",
+    latencyMs: 12,
+    tokens: 0,
+    source: "fallback",
+    status: "success",
+    reason: "SIMULATED_TIMEOUT",
+  },
+  {
+    id: "call-004",
+    timestamp: new Date(Date.now() - 1500000).toISOString(),
+    model: "gemini-3.8-flash",
+    category: "DRAINAGE",
+    latencyMs: 820,
+    tokens: 1350,
+    source: "gemini",
+    status: "success",
+  },
+  {
+    id: "call-005",
+    timestamp: new Date(Date.now() - 2400000).toISOString(),
+    model: "gemini-3.8-flash",
+    category: "WATER_LEAK",
+    latencyMs: 790,
+    tokens: 1290,
+    source: "gemini",
+    status: "success",
+  },
+];
+
+export function recordAiInferenceCall(call: AiCallRecord) {
+  MEMORY_AI_CALLS.unshift(call);
+  if (MEMORY_AI_CALLS.length > 50) {
+    MEMORY_AI_CALLS.pop();
+  }
+}
+
 export function getAiMonitoringMetrics() {
+  const totalCalls = 142 + MEMORY_AI_CALLS.length - 5;
+  const fallbackCount = MEMORY_AI_CALLS.filter((c) => c.source === "fallback").length;
+  const fallbackRate = Math.round(((fallbackCount / Math.max(1, MEMORY_AI_CALLS.length)) * 100) * 10) / 10;
+  const latencies = MEMORY_AI_CALLS.map((c) => c.latencyMs).sort((a, b) => a - b);
+  const p50 = latencies[Math.floor(latencies.length * 0.5)] || 680;
+  const p95 = latencies[Math.floor(latencies.length * 0.95)] || 1420;
+
   return {
     paused: MEMORY_SETTINGS.ai.paused,
     dailyBudget: MEMORY_SETTINGS.ai.dailyBudget,
-    totalRequestsToday: 142,
-    fallbackRate24h: 3.8, // 3.8%
-    latencyP50Ms: 710,
-    latencyP95Ms: 1420,
-    tokensTotalToday: 184500,
-    recentCalls: [
-      {
-        id: "call-001",
-        timestamp: new Date(Date.now() - 120000).toISOString(),
-        model: "gemini-2.5-flash",
-        category: "POTHOLE",
-        latencyMs: 680,
-        tokens: 1240,
-        source: "gemini",
-        status: "success",
-      },
-      {
-        id: "call-002",
-        timestamp: new Date(Date.now() - 340000).toISOString(),
-        model: "gemini-2.5-flash",
-        category: "GARBAGE",
-        latencyMs: 740,
-        tokens: 1180,
-        source: "gemini",
-        status: "success",
-      },
-      {
-        id: "call-003",
-        timestamp: new Date(Date.now() - 890000).toISOString(),
-        model: "keyword-classifier",
-        category: "STREETLIGHT",
-        latencyMs: 12,
-        tokens: 0,
-        source: "fallback",
-        status: "success",
-        reason: "SIMULATED_TIMEOUT",
-      },
-      {
-        id: "call-004",
-        timestamp: new Date(Date.now() - 1500000).toISOString(),
-        model: "gemini-2.5-flash",
-        category: "DRAINAGE",
-        latencyMs: 820,
-        tokens: 1350,
-        source: "gemini",
-        status: "success",
-      },
-      {
-        id: "call-005",
-        timestamp: new Date(Date.now() - 2400000).toISOString(),
-        model: "gemini-2.5-flash",
-        category: "WATER_LEAK",
-        latencyMs: 790,
-        tokens: 1290,
-        source: "gemini",
-        status: "success",
-      },
-    ],
+    totalRequestsToday: totalCalls,
+    fallbackRate24h: Math.max(3.8, fallbackRate),
+    latencyP50Ms: p50,
+    latencyP95Ms: p95,
+    tokensTotalToday: 184500 + MEMORY_AI_CALLS.reduce((sum, c) => sum + c.tokens, 0),
+    recentCalls: [...MEMORY_AI_CALLS],
   };
 }
 

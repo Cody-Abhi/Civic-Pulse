@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { MetricStrip } from "@/components/data/metric-strip";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { ChartFrame } from "@/components/data/chart-frame";
+import { AIInsightsPanel } from "@/components/ai/ai-insights-panel";
 import { listComplaints } from "@/server/services/complaints";
 
 export const metadata: Metadata = {
@@ -99,6 +100,9 @@ export default async function AuthorityAnalyticsPage() {
           },
         ]}
       />
+
+      {/* ── AI Civic Insights (§31.4) ── */}
+      <AIInsightsPanel scope="dept:roads" />
 
       {/* ── Visual Analytics Grids ── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

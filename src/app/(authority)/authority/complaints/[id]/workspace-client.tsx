@@ -22,6 +22,7 @@ import { PriorityBadge } from "@/components/ui/priority-badge";
 import { ReferenceChip } from "@/components/ui/reference-chip";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { PriorityReceipt } from "@/components/ai/priority-receipt";
+import { AIAnalysisCard } from "@/components/ai/ai-analysis-card";
 import type { Complaint, ComplaintStatus, RejectReason, ComplaintActivity } from "@/domain/types";
 
 interface WorkspaceClientProps {
@@ -149,6 +150,24 @@ export function WorkspaceClient({
     setNotePosting(false);
   };
 
+  const handleVerifiedSeverityChange = async (sev: number) => {
+    try {
+      const res = await fetch(`/api/complaints/${complaint.id}/priority`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ verifiedSeverity: sev }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.complaint) {
+          setComplaint(data.complaint);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to update verified severity:", err);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1360px] mx-auto w-full">
       {/* ── Top Bar ── */}
@@ -218,6 +237,25 @@ export function WorkspaceClient({
               </span>
             </div>
           </div>
+
+          {/* ── AI Advisory Analysis & Verified Severity (§27) ── */}
+          <AIAnalysisCard
+            variant="full"
+            source={complaint.aiStatus === "fallback" ? "fallback" : "gemini"}
+            verifiedSeverity={complaint.verifiedSeverity}
+            onSeverityChange={handleVerifiedSeverityChange}
+            analysis={{
+              predictedCategory: complaint.category,
+              shortSummary: complaint.title,
+              extractedKeywords: [complaint.category.toLowerCase(), complaint.location.wardName || "bengaluru"],
+              detectedIssue: complaint.title,
+              suggestedSeverity: (complaint.verifiedSeverity || 3) as 1 | 2 | 3 | 4 | 5,
+              confidence: complaint.aiConfidence || 0.88,
+              recommendedDepartment: complaint.departmentName || "ROADS",
+              reasoning: `Categorised as ${complaint.category.replace(/_/g, " ")}. Severity level contributes 0.25 to the transparent deterministic Priority Receipt.`,
+              possibleDuplicateIndicators: [complaint.location.landmark || "Bengaluru"],
+            }}
+          />
 
           {/* ── Action Bar: Status Transitions ── */}
           <div className="rounded-xl border border-border bg-surface p-5 shadow-xs flex flex-col gap-4">
