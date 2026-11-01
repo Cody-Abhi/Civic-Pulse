@@ -1,0 +1,121 @@
+/* CivicPulse "Modern Civic Minimalism" design tokens.
+   Swiss editorial + enterprise-SaaS minimalism + restrained glassmorphism.
+   Semantic CSS variables only — components never use raw hex (§44). This
+   palette supersedes the PRD "Survey Ledger" tokens per owner direction
+   (recorded in docs/DECISIONS.md); contrast re-verified for WCAG 2.2 AA. */
+:root {
+  /* Brand — premium civic teal action; deep navy ink */
+  --cp-primary: #0f766e;
+  --cp-primary-hover: #0b5d56;
+  --cp-primary-subtle: #e6f1f0;
+  --cp-on-primary: #ffffff;
+  --cp-secondary: #172b36;
+  --cp-secondary-subtle: #e8eced;
+  --cp-accent: #ca8a04;
+
+  /* Surfaces */
+  --cp-bg: #f5f8f7;
+  --cp-surface: #ffffff;
+  --cp-surface-elevated: #ffffff;
+  --cp-surface-sunken: #edf2f1;
+
+  /* Text */
+  --cp-text: #172b36;
+  --cp-text-secondary: #475569;
+  --cp-text-muted: #596579;
+
+  /* Borders */
+  --cp-border: #e3e9ea;
+  --cp-border-strong: #64748b;
+
+  /* Status */
+  --cp-success: #15803d;
+  --cp-success-bg: #e8f6ee;
+  --cp-warning: #b45309;
+  --cp-warning-bg: #fbf0e0;
+  --cp-danger: #b91c1c;
+  --cp-danger-bg: #fcebeb;
+  --cp-info: #0369a1;
+  --cp-info-bg: #e7f1f8;
+
+  /* Priority */
+  --cp-prio-critical-fg: #b42318;
+  --cp-prio-critical-bg: #fcebea;
+  --cp-prio-critical-solid: #dc2626;
+  --cp-prio-high-fg: #9a4408;
+  --cp-prio-high-bg: #fbf0e0;
+  --cp-prio-high-solid: #ea580c;
+  --cp-prio-medium-fg: #845607;
+  --cp-prio-medium-bg: #fbf4de;
+  --cp-prio-medium-solid: #ca8a04;
+  --cp-prio-low-fg: #334e68;
+  --cp-prio-low-bg: #eaf0f4;
+  --cp-prio-low-solid: #64748b;
+
+  /* AI content (subtle indigo keeps "AI = distinct" legible) + demo */
+  --cp-ai-bg: #eef0fb;
+  --cp-ai-border: #d3d8f0;
+  --cp-demo-bg: #ecf1f0;
+  --cp-demo-fg: #475569;
+
+  /* Glassmorphism — only for floating map controls, overlays, selected nav */
+  --cp-glass-bg: rgba(255, 255, 255, 0.72);
+  --cp-glass-border: rgba(23, 43, 54, 0.08);
+  --cp-glass-shadow: 0 8px 32px rgba(23, 43, 54, 0.12);
+  --cp-glass-blur: 12px;
+
+  /* Radii — crisp SaaS hierarchy */
+  --cp-radius-xs: 4px;
+  --cp-radius-sm: 6px;
+  --cp-radius-md: 10px;
+  --cp-radius-lg: 14px;
+  --cp-radius-full: 9999px;
+
+  /* Shadows — navy-tinted, restrained */
+  --cp-shadow-1: 0 1px 2px rgba(23, 43, 54, 0.05), 0 1px 1px rgba(23, 43, 54, 0.03);
+  --cp-shadow-2: 0 4px 12px rgba(23, 43, 54, 0.06), 0 2px 4px rgba(23, 43, 54, 0.04);
+  --cp-shadow-3: 0 16px 40px rgba(23, 43, 54, 0.1), 0 4px 10px rgba(23, 43, 54, 0.05);
+
+  /* Auth dark context — used by login/register pages on the dark hero */
+  --cp-auth-bg: #06283D;
+  --cp-auth-bg-deep: #041824;
+  --cp-auth-bg-mid: #073B50;
+  --cp-auth-accent: #20DCCB;
+  --cp-auth-card-bg: rgba(255, 255, 255, 0.95);
+  --cp-auth-card-border: rgba(255, 255, 255, 0.3);
+  --cp-auth-card-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  --cp-auth-text-white: #FFFFFF;
+  --cp-auth-text-white-70: rgba(255, 255, 255, 0.7);
+  --cp-auth-text-white-60: rgba(255, 255, 255, 0.6);
+  --cp-auth-text-white-50: rgba(255, 255, 255, 0.5);
+  --cp-auth-text-slate: #64748B;
+  --cp-auth-text-slate-light: #94A3B8;
+  --cp-auth-input-bg: #F8FAFC;
+  --cp-auth-input-border: #E2E8F0;
+  --cp-auth-divider: #E2E8F0;
+  --cp-auth-badge-bg: #E6F7F5;
+  --cp-auth-error-bg: #FEF2F2;
+  --cp-auth-tabs-bg: #F1F5F9;
+  --cp-auth-notif-bg: #EF4444;
+
+  /* Sidebar dark */
+  --cp-sidebar-bg: #06283D;
+  --cp-sidebar-active: #0F766E;
+
+  /* Motion */
+  --cp-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --cp-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --cp-dur-fast: 120ms;
+  --cp-dur-base: 180ms;
+  --cp-dur-slow: 260ms;
+
+  /* Z-index scale */
+  --cp-z-sticky: 10;
+  --cp-z-sidebar: 20;
+  --cp-z-dropdown: 30;
+  --cp-z-overlay: 40;
+  --cp-z-dialog: 50;
+  --cp-z-toast: 60;
+  --cp-z-tooltip: 70;
+  --cp-z-skiplink: 80;
+}
