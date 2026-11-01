@@ -3,6 +3,8 @@ import { listComplaints } from "@/server/services/complaints";
 import { ExploreView } from "./explore-view";
 import { PublicFooter } from "@/components/layout/public-footer";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Explore Civic Issues · Public Ledger",
   description:

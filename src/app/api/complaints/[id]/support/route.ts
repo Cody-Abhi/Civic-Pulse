@@ -12,7 +12,7 @@ export const POST = withApi<unknown, { id: string }>(
     }
 
     const { id } = params;
-    const result = await supportComplaint(id, user.uid);
+    const result = await supportComplaint(id, user);
     return NextResponse.json(result);
   },
 );

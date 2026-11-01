@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { listComplaints } from "@/server/services/complaints";
 import { MapView } from "./map-view";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Live Bengaluru Civic Map · OpenFreeMap",
   description:

@@ -4,6 +4,8 @@ import { getComplaint } from "@/server/services/complaints";
 import { PublicComplaintClient } from "./public-complaint-client";
 import { PublicFooter } from "@/components/layout/public-footer";
 
+export const dynamic = "force-dynamic";
+
 interface PublicComplaintPageProps {
   params: Promise<{ ref: string }>;
 }

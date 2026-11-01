@@ -4,8 +4,10 @@ import { DemoBadge } from "@/components/ui/demo-badge";
 import { listAdminUsers, getAdminDepartments } from "@/server/services/admin";
 import { UsersClient } from "./users-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminUsersPage() {
-  const { users } = listAdminUsers();
+  const { users } = await listAdminUsers();
   const departments = await getAdminDepartments();
 
   return (

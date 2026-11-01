@@ -42,7 +42,7 @@ export const PATCH = withApi<PriorityAdjustmentBody, { id: string }>(
       const updated = await setVerifiedSeverity(
         id,
         body.verifiedSeverity as Severity,
-        user.uid,
+        user,
       );
       return NextResponse.json({ success: true, complaint: updated });
     }
@@ -59,7 +59,7 @@ export const PATCH = withApi<PriorityAdjustmentBody, { id: string }>(
       id,
       body.adjustment,
       body.rationale,
-      user.uid,
+      user,
     );
 
     return NextResponse.json({ success: true, complaint: updated });

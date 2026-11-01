@@ -33,7 +33,7 @@ export default async function AuthorityWorkspacePage({
     notFound();
   }
 
-  const activities = getComplaintActivities(complaint.id);
+  const activities = await getComplaintActivities(complaint.id);
 
   return (
     <main id="main" className="flex flex-1 flex-col">

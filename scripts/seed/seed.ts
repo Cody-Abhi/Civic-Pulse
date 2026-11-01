@@ -1,23 +1,56 @@
-import * as fs from "fs";
+import * as dotenv from "dotenv";
 import * as path from "path";
+
+// Load environment variables before initializing Firebase
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+
+if (!process.env.FIRESTORE_EMULATOR_HOST) {
+  process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
+}
+if (!process.env.FIREBASE_AUTH_EMULATOR_HOST) {
+  process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
+}
+
+import { initializeApp, getApps, type App } from "firebase-admin/app";
+import { getAuth, type Auth } from "firebase-admin/auth";
+import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { computePriority } from "../../src/domain/priority";
 import {
   CATEGORY_CONFIG,
   DEFAULT_WEIGHTS,
   DEFAULT_BANDS,
   DEFAULT_WEIGHTS_VERSION,
+  DUPLICATE_SETTINGS,
 } from "../../src/domain/categories";
 import type {
   Complaint,
+  PublicComplaint,
+  ComplaintActivity,
   ComplaintCategory,
   ComplaintStatus,
   HazardFlag,
   AffectedScale,
   DurationBucket,
+  User,
+  Department,
 } from "../../src/domain/types";
+import type { MapSnapshotPoint } from "../../src/server/repositories/complaints.repo";
 
-// Seed parameters (§35)
+let app: App;
+if (getApps().length === 0) {
+  app = initializeApp({
+    projectId: process.env.FIREBASE_ADMIN_PROJECT_ID || "civic-pulse-4a203",
+  });
+} else {
+  app = getApps()[0]!;
+}
+
+const auth: Auth = getAuth(app);
+const firestore: Firestore = getFirestore(app);
+
 const TOTAL_COMPLAINTS = 240;
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "CivicPulseDemo2026!";
 
 const WARDS = [
   { id: "ward-150-bellandur", name: "Bellandur", lat: 12.9304, lng: 77.6784 },
@@ -89,12 +122,168 @@ const LANDMARKS = [
   "junction circle",
 ];
 
+const SEED_USERS = [
+  {
+    uid: "demo-admin-uid",
+    email: "admin@demo.civicpulse.invalid",
+    displayName: "Civic Administrator",
+    role: "admin" as const,
+    departmentId: null,
+    homeWardId: null,
+  },
+  {
+    uid: "demo-authority-uid",
+    email: "roads@demo.civicpulse.invalid",
+    displayName: "K. Suresh (EE Roads)",
+    role: "authority" as const,
+    departmentId: "roads",
+    homeWardId: "ward-150-bellandur",
+  },
+  {
+    uid: "auth-water-uid",
+    email: "water@demo.civicpulse.invalid",
+    displayName: "R. Meena (BWSSB)",
+    role: "authority" as const,
+    departmentId: "water",
+    homeWardId: "ward-174-hsr-layout",
+  },
+  {
+    uid: "auth-swm-uid",
+    email: "swm@demo.civicpulse.invalid",
+    displayName: "P. Gowda (SWM Lead)",
+    role: "authority" as const,
+    departmentId: "swm",
+    homeWardId: "ward-151-koramangala",
+  },
+  {
+    uid: "auth-drain-uid",
+    email: "drainage@demo.civicpulse.invalid",
+    displayName: "V. Rao (Stormwater)",
+    role: "authority" as const,
+    departmentId: "drainage",
+    homeWardId: "ward-174-hsr-layout",
+  },
+  {
+    uid: "auth-elec-uid",
+    email: "electrical@demo.civicpulse.invalid",
+    displayName: "S. Murthy (BESCOM)",
+    role: "authority" as const,
+    departmentId: "electrical",
+    homeWardId: "ward-150-bellandur",
+  },
+  {
+    uid: "demo-citizen-uid",
+    email: "citizen@demo.civicpulse.invalid",
+    displayName: "Aarav Patel",
+    role: "citizen" as const,
+    departmentId: null,
+    homeWardId: "ward-150-bellandur",
+  },
+  {
+    uid: "citizen-priya-uid",
+    email: "priya.sharma@example.com",
+    displayName: "Priya Sharma",
+    role: "citizen" as const,
+    departmentId: null,
+    homeWardId: "ward-174-hsr-layout",
+  },
+  {
+    uid: "citizen-vikram-uid",
+    email: "vikram.n@example.com",
+    displayName: "Vikram Nambiar",
+    role: "citizen" as const,
+    departmentId: null,
+    homeWardId: "ward-085-whitefield",
+  },
+  {
+    uid: "citizen-ananya-uid",
+    email: "ananya.r@example.com",
+    displayName: "Ananya Reddy",
+    role: "citizen" as const,
+    departmentId: null,
+    homeWardId: "ward-150-bellandur",
+  },
+  {
+    uid: "citizen-suspended-uid",
+    email: "spammer@example.com",
+    displayName: "Flagged Citizen",
+    role: "citizen" as const,
+    departmentId: null,
+    homeWardId: null,
+    status: "suspended" as const,
+  },
+];
+
+const DEPARTMENTS: Department[] = [
+  {
+    id: "roads",
+    name: "Road Infrastructure & Engineering",
+    code: "BBMP-RD",
+    description: "Maintenance of city roads, pothole repairs, street widening, and flyover structures.",
+    active: true,
+    categories: ["POTHOLE", "INFRASTRUCTURE"],
+    authoritiesCount: 12,
+  },
+  {
+    id: "swm",
+    name: "Solid Waste Management",
+    code: "BBMP-SWM",
+    description: "Door-to-door garbage collection, dry waste collection centres, and street sweeping.",
+    active: true,
+    categories: ["GARBAGE"],
+    authoritiesCount: 18,
+  },
+  {
+    id: "electrical",
+    name: "Street Lighting & Electrical",
+    code: "BESCOM-LT",
+    description: "Streetlight operation, LED repairs, high-mast towers, and cable hazard resolution.",
+    active: true,
+    categories: ["STREETLIGHT"],
+    authoritiesCount: 8,
+  },
+  {
+    id: "water",
+    name: "Bengaluru Water Supply & Sewerage",
+    code: "BWSSB-WT",
+    description: "Potable pipeline leakages, low water pressure, and municipal water connections.",
+    active: true,
+    categories: ["WATER_LEAK"],
+    authoritiesCount: 14,
+  },
+  {
+    id: "drainage",
+    name: "Stormwater Drainage & Rajakaluve",
+    code: "BBMP-SWD",
+    description: "Primary and secondary stormwater drains, silt clearance, and urban flood mitigation.",
+    active: true,
+    categories: ["DRAINAGE"],
+    authoritiesCount: 6,
+  },
+  {
+    id: "health",
+    name: "Public Health & Sanitation",
+    code: "BBMP-HLT",
+    description: "Vector control, public toilet hygiene, animal welfare, and food safety sanitation.",
+    active: true,
+    categories: ["SANITATION"],
+    authoritiesCount: 9,
+  },
+  {
+    id: "general",
+    name: "General Municipal Administration",
+    code: "BBMP-GEN",
+    description: "Uncategorized complaints, inter-departmental inquiries, and public assistance.",
+    active: true,
+    categories: ["OTHER"],
+    authoritiesCount: 4,
+  },
+];
+
 export function generateSyntheticComplaints(): Complaint[] {
   const complaints: Complaint[] = [];
   const now = Date.now();
 
-  // BBMP calibrated category distribution:
-  // Streetlight ~31%, Garbage ~30%, Pothole ~15%, Drainage ~10%, Water ~8%, Sanitation ~4%, Infra ~2%
   const categoryPool: ComplaintCategory[] = [];
   const pushCat = (cat: ComplaintCategory, count: number) => {
     for (let i = 0; i < count; i++) categoryPool.push(cat);
@@ -108,7 +297,6 @@ export function generateSyntheticComplaints(): Complaint[] {
   pushCat("INFRASTRUCTURE", 5);
   pushCat("OTHER", 3);
 
-  // Status distributions: ~55% CLOSED/RESOLVED, 30% IN_PROGRESS/ASSIGNED, 10% SUBMITTED, 5% REJECTED
   const statusPool: ComplaintStatus[] = [];
   const pushStatus = (st: ComplaintStatus, count: number) => {
     for (let i = 0; i < count; i++) statusPool.push(st);
@@ -128,24 +316,20 @@ export function generateSyntheticComplaints(): Complaint[] {
     const landmark = LANDMARKS[i % LANDMARKS.length]!;
     const config = CATEGORY_CONFIG[category];
 
-    // Timestamp spanning last 60 days
     const daysAgo = (i * 59) / TOTAL_COMPLAINTS;
     const createdAtMs = now - Math.round(daysAgo * 24 * 3600 * 1000);
     const createdAtIso = new Date(createdAtMs).toISOString();
 
-    // Coordinates with small realistic jitter within ward (~300m)
     const latJitter = ((i % 17) - 8) * 0.0012;
     const lngJitter = (((i * 7) % 19) - 9) * 0.0012;
     const lat = Number((ward.lat + latJitter).toFixed(5));
     const lng = Number((ward.lng + lngJitter).toFixed(5));
 
-    // Template description
     const templates = TEMPLATES[category];
     const template = templates[i % templates.length]!;
     const description = template.replace("{landmark}", landmark);
     const title = `${category.replace(/_/g, " ")} near ${ward.name} ${landmark}`;
 
-    // Hazard flags for high urgency items
     const hazardFlags: HazardFlag[] = [];
     if (i % 7 === 0) hazardFlags.push("INJURY_RISK");
     if (category === "STREETLIGHT" && i % 5 === 0) hazardFlags.push("EXPOSED_WIRE");
@@ -156,7 +340,6 @@ export function generateSyntheticComplaints(): Complaint[] {
     const durationBucket: DurationBucket = daysAgo < 2 ? "TODAY" : daysAgo < 7 ? "FEW_DAYS" : daysAgo < 14 ? "WEEK" : "OVER_TWO_WEEKS";
     const reporterCount = (i % 5 === 0) ? 4 : (i % 3 === 0) ? 2 : 1;
 
-    // Compute priority
     const priority = computePriority({
       baseSeverity: config.baseSeverity,
       verifiedSeverity: status === "RESOLVED" || status === "CLOSED" ? config.baseSeverity : null,
@@ -179,7 +362,7 @@ export function generateSyntheticComplaints(): Complaint[] {
     const ref = `CP-BLR-2611-${seqNum}`;
     const id = `synthetic-${seqNum}`;
 
-    const complaint: Complaint & { isSynthetic: boolean } = {
+    const complaint: Complaint = {
       id,
       ref,
       cityId: "blr",
@@ -245,23 +428,220 @@ export function generateSyntheticComplaints(): Complaint[] {
   return complaints;
 }
 
-export async function runSeed() {
-  console.log("Generating 240 synthetic complaints...");
-  const complaints = generateSyntheticComplaints();
+export async function runSeed(): Promise<number> {
+  console.log("🌱 Starting CivicPulse Firestore & Auth Seeding...");
 
-  const fixtureDir = path.join(process.cwd(), "fixtures", "seed");
-  if (!fs.existsSync(fixtureDir)) {
-    fs.mkdirSync(fixtureDir, { recursive: true });
+  // 1. Seed Users in Firebase Auth & Firestore
+  console.log("Creating/updating Firebase Auth users & Firestore profiles...");
+  for (const u of SEED_USERS) {
+    try {
+      try {
+        await auth.getUser(u.uid);
+        await auth.updateUser(u.uid, {
+          email: u.email,
+          password: DEMO_PASSWORD,
+          displayName: u.displayName,
+          emailVerified: true,
+        });
+      } catch {
+        await auth.createUser({
+          uid: u.uid,
+          email: u.email,
+          password: DEMO_PASSWORD,
+          displayName: u.displayName,
+          emailVerified: true,
+        });
+      }
+
+      await auth.setCustomUserClaims(u.uid, {
+        role: u.role,
+        departmentId: u.departmentId,
+        status: (u as { status?: string }).status || "active",
+        synthetic: true,
+        v: Date.now(),
+      });
+
+      const userDoc: User = {
+        uid: u.uid,
+        email: u.email,
+        displayName: u.displayName,
+        role: u.role,
+        departmentId: u.departmentId,
+        status: (u as { status?: "active" | "suspended" }).status || "active",
+        homeWardId: u.homeWardId,
+        emailVerified: true,
+        prefs: {
+          defaultVisibility: "public",
+          notify: { support: true, newInQueue: true, slaBreach: true },
+          pushEnabled: false,
+        },
+        stats: {
+          filed: u.role === "citizen" ? 14 : 0,
+          resolved: u.role === "citizen" ? 9 : 0,
+          voicesAdded: 6,
+          supportersOnMyReports: 12,
+          byStatus: {},
+        },
+        unreadNotifications: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await firestore.collection("users").doc(u.uid).set(userDoc, { merge: true });
+    } catch (err) {
+      console.error(`Error configuring user ${u.email}:`, err);
+    }
   }
 
-  // Calculate cityMetrics totals
+  // 2. Seed Departments
+  console.log("Seeding departments...");
+  for (const dept of DEPARTMENTS) {
+    await firestore.collection("departments").doc(dept.id).set(dept, { merge: true });
+  }
+
+  // 3. Seed System Settings
+  console.log("Seeding system settings...");
+  const nowIso = new Date().toISOString();
+  await firestore.collection("systemSettings").doc("priorityWeights").set({
+    version: 3,
+    weights: DEFAULT_WEIGHTS,
+    bands: DEFAULT_BANDS,
+    updatedByUid: "demo-admin-uid",
+    updatedAt: nowIso,
+  });
+
+  await firestore.collection("systemSettings").doc("categories").set({
+    items: CATEGORY_CONFIG,
+    updatedAt: nowIso,
+  });
+
+  await firestore.collection("systemSettings").doc("duplicate").set({
+    ...DUPLICATE_SETTINGS,
+    weights: { text: 0.45, geo: 0.25, category: 0.15, time: 0.15 },
+    updatedAt: nowIso,
+  });
+
+  await firestore.collection("systemSettings").doc("ai").set({
+    paused: false,
+    dailyRequestBudget: 400,
+    perUserDailyAnalyses: 20,
+    insightCooldownMin: 10,
+    updatedAt: nowIso,
+  });
+
+  await firestore.collection("systemSettings").doc("rateLimits").set({
+    complaintsPerUserPerDay: 10,
+    supportsPerUserPerDay: 50,
+    updatedAt: nowIso,
+  });
+
+  await firestore.collection("systemSettings").doc("health").set({
+    status: "healthy",
+    lastCheckedAt: nowIso,
+  });
+
+  // 4. Generate & Write 240 Synthetic Complaints
+  console.log("Writing 240 synthetic complaints to Firestore...");
+  const complaints = generateSyntheticComplaints();
+
+  // Write in batches of 400
+  let batch = firestore.batch();
+  let opCount = 0;
+
+  const mapPoints: MapSnapshotPoint[] = [];
+
+  for (const c of complaints) {
+    batch.set(firestore.collection("complaints").doc(c.id), c);
+    opCount++;
+
+    if (c.visibility === "public") {
+      const pub: PublicComplaint = {
+        id: c.id,
+        ref: c.ref,
+        title: c.title,
+        description: c.description,
+        category: c.category,
+        departmentId: c.departmentId,
+        departmentName: c.departmentName,
+        status: c.status,
+        statusChangedAt: c.statusChangedAt,
+        location: c.location,
+        priority: c.priority,
+        supporterCount: c.supporterCount,
+        independentReporterCount: c.independentReporterCount,
+        createdAt: c.createdAt,
+      };
+      batch.set(firestore.collection("publicComplaints").doc(c.id), pub);
+      opCount++;
+
+      // Include in map snapshot if not closed/rejected
+      if (c.status !== "CLOSED" && c.status !== "REJECTED") {
+        mapPoints.push({
+          id: c.id,
+          ref: c.ref,
+          lat: Number(c.location.lat.toFixed(5)),
+          lng: Number(c.location.lng.toFixed(5)),
+          category: c.category,
+          band: c.priority.band,
+          score: c.priority.score,
+          status: c.status,
+          supporters: c.supporterCount,
+          isSynthetic: true,
+          title: c.title.slice(0, 40),
+        });
+      }
+    }
+
+    const activity: ComplaintActivity = {
+      id: `act-${c.id}`,
+      complaintId: c.id,
+      actorUid: c.reporterUid,
+      actorName: c.reporterDisplayName,
+      actorRole: "citizen",
+      action: "CREATED",
+      createdAt: c.createdAt,
+      visibleToReporter: true,
+      departmentId: c.departmentId,
+    };
+    batch.set(firestore.collection("complaintActivities").doc(activity.id), activity);
+    opCount++;
+
+    if (opCount >= 400) {
+      await batch.commit();
+      batch = firestore.batch();
+      opCount = 0;
+    }
+  }
+
+  if (opCount > 0) {
+    await batch.commit();
+  }
+
+  // 5. Aggregate and Write City Metrics Totals
+  console.log("Aggregating and writing cityMetrics & departmentMetrics...");
   const total = complaints.length;
   const resolved = complaints.filter((c) => c.status === "RESOLVED" || c.status === "CLOSED").length;
   const inProgress = complaints.filter((c) => c.status === "IN_PROGRESS" || c.status === "ASSIGNED").length;
   const submitted = complaints.filter((c) => c.status === "SUBMITTED").length;
   const critical = complaints.filter((c) => c.priority.band === "CRITICAL").length;
+  const openCount = complaints.filter((c) => c.status !== "RESOLVED" && c.status !== "CLOSED").length;
 
-  const cityMetrics = {
+  const openByBand: Record<string, number> = {};
+  const openByCategory: Record<string, number> = {};
+  const openByDepartment: Record<string, number> = {};
+  const openByWard: Record<string, number> = {};
+
+  complaints
+    .filter((c) => c.status !== "RESOLVED" && c.status !== "CLOSED")
+    .forEach((c) => {
+      openByBand[c.priority.band] = (openByBand[c.priority.band] || 0) + 1;
+      openByCategory[c.category] = (openByCategory[c.category] || 0) + 1;
+      openByDepartment[c.departmentId] = (openByDepartment[c.departmentId] || 0) + 1;
+      const wId = c.location.wardId || "ward-blr-central";
+      openByWard[wId] = (openByWard[wId] || 0) + 1;
+    });
+
+  const cityMetricsTotals = {
     totalComplaints: total,
     resolvedComplaints: resolved,
     inProgressComplaints: inProgress,
@@ -270,28 +650,66 @@ export async function runSeed() {
     resolutionRate: Number(((resolved / total) * 100).toFixed(1)),
     avgResolutionHours: 21.4,
     activeCitizens: 92,
+    open: openCount,
+    openByBand,
+    openByDepartment,
+    openByCategory,
+    openByWard,
     isSynthetic: true,
-    updatedAt: new Date().toISOString(),
+    updatedAt: nowIso,
   };
 
-  fs.writeFileSync(
-    path.join(fixtureDir, "complaints.json"),
-    JSON.stringify(complaints, null, 2),
-  );
+  await firestore.collection("cityMetrics").doc("totals").set(cityMetricsTotals);
 
-  fs.writeFileSync(
-    path.join(fixtureDir, "metrics.json"),
-    JSON.stringify(cityMetrics, null, 2),
-  );
+  // Write department metrics
+  for (const dept of DEPARTMENTS) {
+    const deptComplaints = complaints.filter((c) => c.departmentId === dept.id);
+    const deptOpen = deptComplaints.filter((c) => c.status !== "RESOLVED" && c.status !== "CLOSED").length;
+    const deptOverdue = deptComplaints.filter(
+      (c) => c.status !== "RESOLVED" && c.status !== "CLOSED" && new Date(c.slaDueAt).getTime() < Date.now(),
+    ).length;
+    const deptBands: Record<string, number> = {};
+    deptComplaints
+      .filter((c) => c.status !== "RESOLVED" && c.status !== "CLOSED")
+      .forEach((c) => {
+        deptBands[c.priority.band] = (deptBands[c.priority.band] || 0) + 1;
+      });
 
-  console.log(`Successfully generated ${complaints.length} synthetic complaints with isSynthetic=true!`);
-  console.log("City Metrics Totals:", cityMetrics);
+    await firestore.collection("departmentMetrics").doc(dept.id).set({
+      open: deptOpen,
+      overdue: deptOverdue,
+      openByBand: deptBands,
+      updatedAt: nowIso,
+    });
+  }
+
+  // 6. Write Map Snapshot
+  console.log(`Writing mapSnapshots/current (${mapPoints.length} points)...`);
+  await firestore.collection("mapSnapshots").doc("current").set({
+    points: mapPoints,
+    count: mapPoints.length,
+    updatedAt: nowIso,
+    version: 1,
+  });
+
+  // 7. Write Counter
+  await firestore.collection("counters").doc("complaintSeq-2611").set({
+    value: 240,
+  });
+
+  console.log(`✅ Seeding complete: ${complaints.length} complaints written to Firestore!`);
+  return complaints.length;
 }
 
 // Auto-run if executed via CLI
 if (process.argv[1]?.includes("seed.ts")) {
-  runSeed().catch((err) => {
-    console.error("Seed failed:", err);
-    process.exit(1);
-  });
+  runSeed()
+    .then((count) => {
+      console.log(`Seed script exited cleanly with ${count} items.`);
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("Seed failed:", err);
+      process.exit(1);
+    });
 }

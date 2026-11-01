@@ -22,8 +22,8 @@ describe("AI Processing & Fallback Service (§27, §28, §31.4)", () => {
     homeWardId: null,
   };
 
-  beforeEach(() => {
-    setAiPaused(false, dummyActor);
+  beforeEach(async () => {
+    await setAiPaused(false, dummyActor);
   });
 
   describe("Analysis Token signing and verification", () => {
@@ -64,7 +64,7 @@ describe("AI Processing & Fallback Service (§27, §28, §31.4)", () => {
     }, 20000);
 
     it("immediately invokes keyword fallback when emergency AI switch is paused (PRD-AI-007)", async () => {
-      setAiPaused(true, dummyActor);
+      await setAiPaused(true, dummyActor);
 
       const res = await analyzeComplaintDraft({
         title: "Overflowing garbage bin",

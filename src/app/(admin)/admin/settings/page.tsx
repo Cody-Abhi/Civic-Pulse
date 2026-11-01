@@ -4,8 +4,10 @@ import { DemoBadge } from "@/components/ui/demo-badge";
 import { getSystemSettings } from "@/server/services/admin";
 import { SettingsClient } from "./settings-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminSettingsPage() {
-  const settings = getSystemSettings();
+  const settings = await getSystemSettings();
 
   return (
     <div className="space-y-6">

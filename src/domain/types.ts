@@ -256,7 +256,9 @@ export interface AuditLog {
   summary: string;
   before?: Record<string, unknown> | null | undefined;
   after?: Record<string, unknown> | null | undefined;
+  reason?: string | undefined;
   ipHash?: string | undefined;
+  requestId?: string | undefined;
   createdAt: string;
 }
 

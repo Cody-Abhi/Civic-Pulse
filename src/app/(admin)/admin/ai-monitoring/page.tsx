@@ -4,8 +4,10 @@ import { DemoBadge } from "@/components/ui/demo-badge";
 import { getAiMonitoringMetrics } from "@/server/services/admin";
 import { AiMonitoringClient } from "./ai-monitoring-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminAiMonitoringPage() {
-  const metrics = getAiMonitoringMetrics();
+  const metrics = await getAiMonitoringMetrics();
 
   return (
     <div className="space-y-6">

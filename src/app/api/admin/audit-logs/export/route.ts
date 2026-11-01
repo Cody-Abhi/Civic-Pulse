@@ -9,7 +9,7 @@ export const GET = withApi(
     roles: ["admin"],
   },
   async () => {
-    const logs = getAuditLogs({ limit: 1000 });
+    const logs = await getAuditLogs({ limit: 1000 });
     const headers = ["Timestamp", "Actor Email", "Actor Role", "Action", "Target Type", "Target ID", "Summary"];
     const rows = logs.map((l) => [
       l.createdAt,

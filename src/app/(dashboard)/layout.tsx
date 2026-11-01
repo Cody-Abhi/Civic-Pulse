@@ -2,6 +2,8 @@ import * as React from "react";
 import { requireRole } from "@/server/auth/require-role";
 import { AppShell } from "@/components/layout/app-shell";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Dashboard shell layout — wraps citizen portal routes.
  * Employs responsive AppShell (264px sidebar / 72px rail / mobile bottom tab & drawer).

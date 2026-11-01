@@ -14,13 +14,15 @@ import {
   getAiMonitoringMetrics,
 } from "@/server/services/admin";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminDashboardPage() {
-  const metrics = getCityMetrics();
+  const metrics = await getCityMetrics();
   const complaints = await getComplaints();
-  const { total: totalUsers } = listAdminUsers();
+  const { total: totalUsers } = await listAdminUsers();
   const departments = await getAdminDepartments();
-  const recentLogs = getAuditLogs({ limit: 8 });
-  const aiMetrics = getAiMonitoringMetrics();
+  const recentLogs = await getAuditLogs({ limit: 8 });
+  const aiMetrics = await getAiMonitoringMetrics();
 
   const openComplaints = complaints.filter(
     (c) => c.status !== "RESOLVED" && c.status !== "REJECTED",

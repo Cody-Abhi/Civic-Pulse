@@ -4,9 +4,11 @@ import { DemoBadge } from "@/components/ui/demo-badge";
 import { getAdminDepartments, getAdminCategories } from "@/server/services/admin";
 import { DepartmentsClient } from "./departments-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminDepartmentsPage() {
   const departments = await getAdminDepartments();
-  const categories = getAdminCategories();
+  const categories = await getAdminCategories();
 
   return (
     <div className="space-y-6">

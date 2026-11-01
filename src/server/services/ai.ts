@@ -2,6 +2,7 @@ import "server-only";
 import crypto from "crypto";
 import { getGeminiClient, getGeminiModelConfig } from "@/server/clients/gemini";
 import { getServerEnv } from "@/lib/server-env";
+import { getAdminFirestore } from "@/server/clients/firebase-admin";
 import { getSystemSettings, recordAiInferenceCall } from "@/server/services/admin";
 import { getComplaints, updateComplaintPriority } from "@/server/services/complaints";
 import { redactPII } from "@/domain/redact";
@@ -58,14 +59,8 @@ export interface AIAnalysisRecord {
   createdAt: string;
 }
 
-// In-memory cache & store for analyses (guarantees zero-cost Spark tier persistence)
-const MEMORY_AI_CACHE = new Map<string, AIAnalysisRecord>();
-const MEMORY_ANALYSES = new Map<string, AIAnalysisRecord>();
-
-/**
- * Escapes < and > in user text to prevent tag injection (PRD §27.2).
- */
-function sanitizeReportTags(text: string): string {
+// Analysis token signing (§27.2, §40).
+export function sanitizeReportTags(text: string): string {
   return text.replace(/</g, "‹").replace(/>/g, "›");
 }
 
@@ -145,7 +140,8 @@ export async function analyzeComplaintDraft(
   user?: SessionUser | null | undefined,
 ): Promise<{ analysis: AIAnalysisRecord; analysisToken: string }> {
   const startTime = Date.now();
-  const settings = getSystemSettings();
+  const settings = await getSystemSettings();
+  const firestore = getAdminFirestore();
 
   // 1. Pre-processing & PII Redaction
   const rawTitle = (input.title || "").trim();
@@ -161,11 +157,22 @@ export async function analyzeComplaintDraft(
     .update(`${PROMPT_VERSION}:${categoryHint || "none"}:${inputNormalized}`)
     .digest("hex");
 
-  // Check 24-hour cache
-  const cached = MEMORY_AI_CACHE.get(inputHash);
-  if (cached && Date.now() - new Date(cached.createdAt).getTime() < 24 * 3600 * 1000) {
-    const analysisToken = signAnalysisToken(cached.id, user?.uid || "anon");
-    return { analysis: cached, analysisToken };
+  // Check 24-hour cache from Firestore
+  try {
+    const cachedSnap = await firestore
+      .collection("aiAnalyses")
+      .where("inputHash", "==", inputHash)
+      .limit(1)
+      .get();
+    if (!cachedSnap.empty && cachedSnap.docs[0]) {
+      const cached = cachedSnap.docs[0].data() as AIAnalysisRecord;
+      if (Date.now() - new Date(cached.createdAt).getTime() < 24 * 3600 * 1000) {
+        const analysisToken = signAnalysisToken(cached.id, user?.uid || "anon");
+        return { analysis: cached, analysisToken };
+      }
+    }
+  } catch {
+    // Proceed if cache read encounters issue
   }
 
   const analysisId = `analysis-${crypto.randomUUID().slice(0, 8)}`;
@@ -185,9 +192,8 @@ export async function analyzeComplaintDraft(
       tokens: 0,
       createdAt: new Date().toISOString(),
     };
-    MEMORY_AI_CACHE.set(inputHash, record);
-    MEMORY_ANALYSES.set(analysisId, record);
-    recordAiInferenceCall({
+    await firestore.collection("aiAnalyses").doc(analysisId).set(record);
+    await recordAiInferenceCall({
       id: analysisId,
       timestamp: record.createdAt,
       model: "keyword-classifier",
@@ -315,9 +321,8 @@ export async function analyzeComplaintDraft(
       tokens: estimatedTokens,
       createdAt: new Date().toISOString(),
     };
-    MEMORY_AI_CACHE.set(inputHash, record);
-    MEMORY_ANALYSES.set(analysisId, record);
-    recordAiInferenceCall({
+    await firestore.collection("aiAnalyses").doc(analysisId).set(record);
+    await recordAiInferenceCall({
       id: analysisId,
       timestamp: record.createdAt,
       model: usedModel,
@@ -347,9 +352,8 @@ export async function analyzeComplaintDraft(
     createdAt: new Date().toISOString(),
   };
 
-  MEMORY_AI_CACHE.set(inputHash, fallbackRecord);
-  MEMORY_ANALYSES.set(analysisId, fallbackRecord);
-  recordAiInferenceCall({
+  await firestore.collection("aiAnalyses").doc(analysisId).set(fallbackRecord);
+  await recordAiInferenceCall({
     id: analysisId,
     timestamp: fallbackRecord.createdAt,
     model: "keyword-classifier",
@@ -401,7 +405,7 @@ export async function checkNearbyDuplicates(input: {
   candidates: DuplicateCandidateResult[];
   method: "embedding" | "tfidf";
 }> {
-  const settings = getSystemSettings().duplicates;
+  const settings = (await getSystemSettings()).duplicates;
   const allComplaints = await getComplaints();
   const nowMs = Date.now();
   const maxHours = settings.windowDays * 24;
@@ -589,7 +593,7 @@ export async function generateGroundedInsights(
   scope: string = "city:blr",
 ): Promise<CivicInsightsOutput> {
   const complaints = await getComplaints();
-  const settings = getSystemSettings();
+  const settings = await getSystemSettings();
 
   // Filter complaints by scope
   const isDeptScope = scope.startsWith("dept:");

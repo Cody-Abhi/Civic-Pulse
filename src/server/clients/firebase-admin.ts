@@ -44,6 +44,13 @@ export function getAdminAuth(): Auth {
   return getAuth(getAdminApp());
 }
 
+let adminFirestore: Firestore | null = null;
+
 export function getAdminFirestore(): Firestore {
-  return getFirestore(getAdminApp());
+  if (adminFirestore) {
+    return adminFirestore;
+  }
+  adminFirestore = getFirestore(getAdminApp());
+  adminFirestore.settings({ ignoreUndefinedProperties: true });
+  return adminFirestore;
 }

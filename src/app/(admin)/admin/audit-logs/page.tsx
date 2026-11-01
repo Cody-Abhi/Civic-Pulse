@@ -4,8 +4,10 @@ import { DemoBadge } from "@/components/ui/demo-badge";
 import { getAuditLogs } from "@/server/services/admin";
 import { AuditLogsClient } from "./audit-logs-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminAuditLogsPage() {
-  const logs = getAuditLogs({ limit: 100 });
+  const logs = await getAuditLogs({ limit: 100 });
 
   return (
     <div className="space-y-6">
