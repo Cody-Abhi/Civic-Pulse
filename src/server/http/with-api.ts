@@ -243,6 +243,36 @@ export function withApi<TBody = unknown, TParams = Record<string, string>>(
         );
       }
 
+      if (
+        err &&
+        typeof err === "object" &&
+        "status" in err &&
+        typeof (err as { status: unknown }).status === "number" &&
+        "code" in err &&
+        typeof (err as { code: unknown }).code === "string"
+      ) {
+        const custom = err as { status: number; code: string; message: string; details?: unknown };
+        logRequest({
+          ts: new Date().toISOString(),
+          requestId,
+          route: req.nextUrl.pathname,
+          method: req.method,
+          uid: user?.uid,
+          role: user?.role,
+          status: custom.status,
+          durationMs: Date.now() - startedAt,
+          code: custom.code,
+        });
+
+        return formatErrorResponse(
+          custom.status,
+          custom.code,
+          custom.message,
+          custom.details,
+          requestId,
+        );
+      }
+
       const message = err instanceof Error ? err.message : "Internal server error";
       logRequest({
         ts: new Date().toISOString(),

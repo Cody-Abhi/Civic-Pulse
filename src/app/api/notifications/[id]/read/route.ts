@@ -26,3 +26,4 @@ export const POST = withApi<unknown, { id: string }>(
     });
   },
 );
+

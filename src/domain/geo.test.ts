@@ -5,6 +5,8 @@ import {
   geohashNeighbors,
   geohashBlock,
   pointInPolygon,
+  isInsideBengaluru,
+  findWardByPoint,
 } from "./geo";
 
 describe("haversineM", () => {
@@ -76,5 +78,29 @@ describe("pointInPolygon", () => {
     ];
     expect(pointInPolygon({ lat: 5, lng: 5 }, [square, hole])).toBe(false);
     expect(pointInPolygon({ lat: 1, lng: 1 }, [square, hole])).toBe(true);
+  });
+});
+
+describe("isInsideBengaluru & findWardByPoint (§30.1, §30.2)", () => {
+  it("recognizes central Bengaluru coordinates as inside limits", () => {
+    expect(isInsideBengaluru({ lat: 12.9716, lng: 77.5946 })).toBe(true);
+    expect(isInsideBengaluru({ lat: 12.9304, lng: 77.6784 })).toBe(true);
+  });
+
+  it("rejects coordinates clearly outside Bengaluru limits", () => {
+    expect(isInsideBengaluru({ lat: 28.6139, lng: 77.2090 })).toBe(false); // Delhi
+    expect(isInsideBengaluru({ lat: 13.5000, lng: 77.6000 })).toBe(false); // Too north
+    expect(isInsideBengaluru({ lat: 12.5000, lng: 77.6000 })).toBe(false); // Too south
+  });
+
+  it("correctly identifies Bellandur and Indiranagar via point-in-polygon", () => {
+    const bellandur = findWardByPoint({ lat: 12.9304, lng: 77.6784 });
+    expect(bellandur).not.toBeNull();
+    expect(bellandur?.wardId).toBe("ward-150-bellandur");
+    expect(bellandur?.wardName).toBe("Bellandur");
+
+    const indiranagar = findWardByPoint({ lat: 12.9719, lng: 77.6412 });
+    expect(indiranagar).not.toBeNull();
+    expect(indiranagar?.wardId).toBe("ward-080-indiranagar");
   });
 });

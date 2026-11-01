@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Sparkles,
-  MapPin,
   Check,
   AlertTriangle,
   CheckCircle2,
@@ -19,6 +18,8 @@ import { PriorityReceipt } from "@/components/ai/priority-receipt";
 import { AIAnalysisCard } from "@/components/ai/ai-analysis-card";
 import { DuplicateRadar } from "@/components/ai/duplicate-radar";
 import { DemoBadge } from "@/components/ui/demo-badge";
+import { LocationPicker } from "@/components/map/location-picker";
+import { isInsideBengaluru } from "@/domain/geo";
 import { computePriority } from "@/domain/priority";
 import type { AIAnalysisOutput } from "@/domain/schemas";
 import type { DuplicateCandidateResult } from "@/server/services/ai";
@@ -292,18 +293,6 @@ export default function ReportWizardPage() {
     }));
   };
 
-  // Handle Ward selection & coordinates update
-  const handleWardChange = (wardId: string) => {
-    const ward = WARDS.find((w) => w.id === wardId);
-    if (ward) {
-      setForm((prev) => ({
-        ...prev,
-        wardId: ward.id,
-        lat: ward.lat,
-        lng: ward.lng,
-      }));
-    }
-  };
 
   const idempotencyKeyRef = React.useRef<string>("submit-client-token");
 
@@ -633,66 +622,33 @@ export default function ReportWizardPage() {
         </div>
       )}
 
-      {/* Step 3: Location */}
+      {/* Step 3: Location (§14, §18, LocationPicker) */}
       {step === 3 && (
         <div className="flex flex-col gap-6">
-          {/* Ward Selector */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="ward-select" className="text-sm font-semibold text-ink">
-              BBMP Municipal Ward
-            </label>
-            <select
-              id="ward-select"
-              value={form.wardId}
-              onChange={(e) => handleWardChange(e.target.value)}
-              className="rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-ink focus:border-primary focus:outline-none"
-            >
-              {WARDS.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Landmark */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="landmark-input" className="text-sm font-semibold text-ink">
-              Landmark or crossroad directions <span className="text-xs text-muted">(e.g., Near metro pillar 142)</span>
-            </label>
-            <input
-              id="landmark-input"
-              type="text"
-              maxLength={120}
-              value={form.landmark}
-              onChange={(e) => setForm((prev) => ({ ...prev, landmark: e.target.value }))}
-              placeholder="e.g. Opposite BDA Complex, 5th Cross Road junction"
-              className="rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none"
-            />
-          </div>
-
-          {/* Coordinates Pin preview */}
-          <div className="rounded-md border border-border bg-surface p-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-                <MapPin className="h-4 w-4 text-primary" aria-hidden="true" />
-                <span>Geographic Pin Coordinates</span>
-              </div>
-              <span className="font-mono text-xs text-muted">
-                {form.lat.toFixed(4)}, {form.lng.toFixed(4)}
-              </span>
-            </div>
-            <p className="text-xs text-muted leading-relaxed">
-              Mapped to Bengaluru municipal boundaries. Precision within ±15 meters.
-            </p>
-          </div>
+          <LocationPicker
+            value={{ lat: form.lat, lng: form.lng }}
+            onChange={(nextPt, wardId) => {
+              setForm((prev) => ({
+                ...prev,
+                lat: nextPt.lat,
+                lng: nextPt.lng,
+                ...(wardId ? { wardId } : {}),
+              }));
+            }}
+            landmark={form.landmark}
+            onLandmarkChange={(landmark) => setForm((prev) => ({ ...prev, landmark }))}
+          />
 
           <div className="flex justify-between pt-4">
             <Button variant="outline" onClick={() => setStep(2)} className="gap-2">
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               <span>Back</span>
             </Button>
-            <Button onClick={() => setStep(4)} className="gap-2">
+            <Button
+              onClick={() => setStep(4)}
+              disabled={!isInsideBengaluru({ lat: form.lat, lng: form.lng })}
+              className="gap-2"
+            >
               <span>Next: Photos</span>
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Button>

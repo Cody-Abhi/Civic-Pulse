@@ -58,3 +58,4 @@ export const POST = withApi<FeedbackBody, { id: string }>(
     return NextResponse.json({ success: true, complaint: updated });
   },
 );
+

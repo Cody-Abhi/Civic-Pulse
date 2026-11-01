@@ -35,3 +35,4 @@ describe("mapAuthError (§UI-03, §UI-04, §UI-05)", () => {
     );
   });
 });
+

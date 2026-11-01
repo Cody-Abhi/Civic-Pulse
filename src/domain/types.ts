@@ -105,6 +105,20 @@ export interface GeoPoint {
   accuracyM?: number | undefined;
 }
 
+export interface MapSnapshotPoint {
+  id: string;
+  ref: string;
+  lat: number;
+  lng: number;
+  category: ComplaintCategory;
+  band: PriorityBand;
+  score: number;
+  status: ComplaintStatus;
+  supporters: number;
+  isSynthetic: boolean;
+  title: string;
+}
+
 export interface PriorityLineItem {
   key: FactorKey | "ADJ";
   label: string;

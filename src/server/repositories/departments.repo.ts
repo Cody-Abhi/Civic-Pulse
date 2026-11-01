@@ -51,3 +51,4 @@ export async function updateDepartment(
 
   return merged;
 }
+

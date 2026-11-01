@@ -150,3 +150,89 @@ export function pointInPolygon(
   }
   return true;
 }
+
+/** Bengaluru City Bounding Box (§30.1) */
+export const BENGALURU_BOUNDS = {
+  minLat: 12.75,
+  maxLat: 13.25,
+  minLng: 77.40,
+  maxLng: 77.85,
+} as const;
+
+/**
+ * Returns true if the coordinate falls strictly within Bengaluru metropolitan limits.
+ */
+export function isInsideBengaluru(point: LatLng): boolean {
+  return (
+    point.lat >= BENGALURU_BOUNDS.minLat &&
+    point.lat <= BENGALURU_BOUNDS.maxLat &&
+    point.lng >= BENGALURU_BOUNDS.minLng &&
+    point.lng <= BENGALURU_BOUNDS.maxLng
+  );
+}
+
+export interface WardBoundaryFeature {
+  wardId: string;
+  wardName: string;
+  coordinates: number[][][];
+}
+
+/** Default pilot ward polygon definitions for client & server detection */
+export const PILOT_WARD_BOUNDARIES: WardBoundaryFeature[] = [
+  {
+    wardId: "ward-150-bellandur",
+    wardName: "Bellandur",
+    coordinates: [[[77.655, 12.915], [77.695, 12.915], [77.705, 12.945], [77.665, 12.950], [77.655, 12.915]]],
+  },
+  {
+    wardId: "ward-080-indiranagar",
+    wardName: "Indiranagar",
+    coordinates: [[[77.625, 12.960], [77.655, 12.960], [77.655, 12.985], [77.625, 12.985], [77.625, 12.960]]],
+  },
+  {
+    wardId: "ward-151-koramangala",
+    wardName: "Koramangala",
+    coordinates: [[[77.610, 12.920], [77.640, 12.920], [77.645, 12.948], [77.610, 12.945], [77.610, 12.920]]],
+  },
+  {
+    wardId: "ward-085-whitefield",
+    wardName: "Whitefield",
+    coordinates: [[[77.725, 12.948], [77.775, 12.948], [77.780, 12.990], [77.725, 12.990], [77.725, 12.948]]],
+  },
+  {
+    wardId: "ward-174-hsr-layout",
+    wardName: "HSR Layout",
+    coordinates: [[[77.630, 12.898], [77.665, 12.898], [77.665, 12.925], [77.630, 12.925], [77.630, 12.898]]],
+  },
+  {
+    wardId: "ward-045-malleshwaram",
+    wardName: "Malleshwaram",
+    coordinates: [[[77.555, 12.985], [77.585, 12.985], [77.585, 13.015], [77.555, 13.015], [77.555, 12.985]]],
+  },
+  {
+    wardId: "ward-168-jayanagar",
+    wardName: "Jayanagar",
+    coordinates: [[[77.568, 12.915], [77.600, 12.915], [77.600, 12.945], [77.568, 12.945], [77.568, 12.915]]],
+  },
+  {
+    wardId: "ward-007-hebbal",
+    wardName: "Hebbal",
+    coordinates: [[[77.578, 13.020], [77.618, 13.020], [77.618, 13.055], [77.578, 13.055], [77.578, 13.020]]],
+  },
+];
+
+/**
+ * Finds the corresponding BBMP ward for a given point using point-in-polygon.
+ * Returns null if outside the mapped wards.
+ */
+export function findWardByPoint(
+  point: LatLng,
+  wards: WardBoundaryFeature[] = PILOT_WARD_BOUNDARIES,
+): { wardId: string; wardName: string } | null {
+  for (const ward of wards) {
+    if (pointInPolygon(point, ward.coordinates as unknown as ReadonlyArray<ReadonlyArray<readonly [number, number]>>)) {
+      return { wardId: ward.wardId, wardName: ward.wardName };
+    }
+  }
+  return null;
+}

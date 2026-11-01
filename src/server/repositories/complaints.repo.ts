@@ -30,6 +30,7 @@ import {
   DEFAULT_WEIGHTS_VERSION,
 } from "@/domain/categories";
 import { validateTransition } from "@/domain/transitions";
+import { isInsideBengaluru, findWardByPoint, geohashEncode } from "@/domain/geo";
 import type { SessionUser } from "@/server/auth/session";
 
 export const createComplaintSchema = z.object({
@@ -39,8 +40,8 @@ export const createComplaintSchema = z.object({
   categorySource: z.enum(["user", "ai", "fallback"]).default("user"),
   analysisToken: z.string().optional(),
   location: z.object({
-    lat: z.number().min(12.7).max(13.2), // Bengaluru latitude bounds
-    lng: z.number().min(77.4).max(77.8), // Bengaluru longitude bounds
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
     wardId: z.string().optional(),
     landmark: z.string().max(120).optional(),
     accuracyM: z.number().optional(),
@@ -261,6 +262,22 @@ export async function createComplaint(
     }
   }
 
+  // Validation of Bengaluru municipal limits (§30.1)
+  if (!isInsideBengaluru(validated.location)) {
+    const err = new Error("Selected location is outside Bengaluru municipal limits.");
+    (err as unknown as { code: string; status: number }).code = "OUTSIDE_CITY";
+    (err as unknown as { code: string; status: number }).status = 400;
+    throw err;
+  }
+
+  const detectedWard = findWardByPoint(validated.location);
+  const wardId = validated.location.wardId || detectedWard?.wardId || "ward-150-bellandur";
+  const wardName = detectedWard?.wardName || "Bellandur";
+
+  const geohash = geohashEncode(validated.location.lat, validated.location.lng, 9);
+  const geohash5 = geohashEncode(validated.location.lat, validated.location.lng, 5);
+  const geohash6 = geohashEncode(validated.location.lat, validated.location.lng, 6);
+
   // Transaction for atomic creation per PRD §25.3
   const createdComplaint = await firestore.runTransaction(async (tx) => {
     // A. Check idempotency key
@@ -330,11 +347,11 @@ export async function createComplaint(
       location: {
         lat: validated.location.lat,
         lng: validated.location.lng,
-        geohash: "tdr1",
-        geohash5: "tdr1v",
-        geohash6: "tdr1v4",
-        wardId: validated.location.wardId || "ward-150-bellandur",
-        wardName: "Bellandur",
+        geohash,
+        geohash5,
+        geohash6,
+        wardId,
+        wardName,
         landmark: validated.location.landmark,
         accuracyM: validated.location.accuracyM,
       },
