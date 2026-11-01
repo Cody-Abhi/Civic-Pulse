@@ -8,6 +8,9 @@ import type {
   PublicComplaint,
   ComplaintActivity,
   ComplaintCategory,
+  ComplaintStatus,
+  RejectReason,
+  Role,
 } from "@/domain/types";
 import { categorySchema, hazardFlagSchema, durationBucketSchema, affectedScaleSchema } from "@/domain/schemas";
 import { redactPII } from "@/domain/redact";
@@ -451,4 +454,169 @@ export async function supportComplaint(
 
   return { success: true, supporterCount: complaint.supporterCount, complaint };
 }
+
+/**
+ * Updates complaint lifecycle status with activity logging
+ */
+export async function updateComplaintStatus(
+  refOrId: string,
+  newStatus: ComplaintStatus,
+  options?: {
+    note?: string | undefined;
+    resolutionNote?: string | undefined;
+    rejectReason?: RejectReason | undefined;
+    actorUid?: string | undefined;
+    actorName?: string | undefined;
+    actorRole?: Role | undefined;
+  },
+): Promise<Complaint> {
+  ensureSeedLoaded();
+  const complaint = await getComplaint(refOrId);
+  if (!complaint) throw new Error("Complaint not found");
+
+  const nowIso = new Date().toISOString();
+  complaint.status = newStatus;
+  complaint.statusChangedAt = nowIso;
+  complaint.updatedAt = nowIso;
+
+  if (newStatus === "RESOLVED" && options?.resolutionNote) {
+    complaint.resolution = {
+      note: options.resolutionNote,
+      resolvedAt: nowIso,
+      resolvedByUid: options.actorUid || "authority-agent",
+      departmentId: complaint.departmentId,
+      evidence: [],
+    };
+  }
+
+  // Create activity record
+  const activity: ComplaintActivity = {
+    id: crypto.randomUUID(),
+    complaintId: complaint.id,
+    actorUid: options?.actorUid || "authority-agent",
+    actorName: options?.actorName || "Municipal Engineer",
+    actorRole: options?.actorRole || "authority",
+    action: `STATUS_CHANGED_${newStatus}`,
+    note: options?.note || options?.resolutionNote,
+    createdAt: nowIso,
+    visibleToReporter: true,
+    departmentId: complaint.departmentId,
+  };
+
+  const activities = MEMORY_ACTIVITIES.get(complaint.id) || [];
+  activities.push(activity);
+  MEMORY_ACTIVITIES.set(complaint.id, activities);
+
+  addInMemoryComplaint(complaint);
+
+  try {
+    const firestore = getAdminFirestore();
+    await firestore.collection("complaints").doc(complaint.id).update({
+      status: complaint.status,
+      statusChangedAt: complaint.statusChangedAt,
+      resolution: complaint.resolution,
+      updatedAt: complaint.updatedAt,
+    });
+    if (complaint.visibility === "public") {
+      await firestore.collection("publicComplaints").doc(complaint.id).update({
+        status: complaint.status,
+        statusChangedAt: complaint.statusChangedAt,
+      });
+    }
+    await firestore.collection("complaintActivities").doc(activity.id).set(activity);
+  } catch (err) {
+    console.warn("Firestore update skipped/fallback:", err);
+  }
+
+  return complaint;
+}
+
+/**
+ * Adjusts complaint priority score by ±15 points with mandatory rationale
+ */
+export async function adjustComplaintPriority(
+  refOrId: string,
+  adjustment: number,
+  rationale: string,
+  actorUid = "authority-agent",
+): Promise<Complaint> {
+  ensureSeedLoaded();
+  const complaint = await getComplaint(refOrId);
+  if (!complaint) throw new Error("Complaint not found");
+
+  // Adjustment bounded between -15 and +15 per PRD §29.2
+  const clampedAdjustment = Math.min(15, Math.max(-15, adjustment));
+
+  const catConfig = CATEGORY_CONFIG[complaint.category];
+  const nowMs = Date.now();
+  const createdMs = new Date(complaint.createdAt).getTime();
+
+  const newPriority = computePriority({
+    baseSeverity: catConfig.baseSeverity,
+    verifiedSeverity: complaint.verifiedSeverity,
+    hazardFlags: complaint.hazardFlags,
+    independentReporterCount: complaint.independentReporterCount,
+    createdAtMs: createdMs,
+    nowMs,
+    slaHours: complaint.slaHours,
+    affectedScale: complaint.affectedScale,
+    nearbyOpenClusters: 0,
+    timeSensitive: catConfig.timeSensitive,
+    seasonMonths: catConfig.seasonMonths,
+    adjustment: clampedAdjustment,
+    weights: DEFAULT_WEIGHTS,
+    bands: DEFAULT_BANDS,
+    weightsVersion: DEFAULT_WEIGHTS_VERSION,
+    provisional: false,
+  });
+
+  complaint.priority = newPriority;
+  complaint.updatedAt = new Date().toISOString();
+
+  // Activity for priority adjustment
+  const activity: ComplaintActivity = {
+    id: crypto.randomUUID(),
+    complaintId: complaint.id,
+    actorUid,
+    actorName: "Municipal Engineer",
+    actorRole: "authority",
+    action: "PRIORITY_ADJUSTED",
+    note: `Adjustment: ${clampedAdjustment > 0 ? "+" : ""}${clampedAdjustment}. Rationale: ${rationale}`,
+    createdAt: complaint.updatedAt,
+    visibleToReporter: false,
+    departmentId: complaint.departmentId,
+  };
+
+  const activities = MEMORY_ACTIVITIES.get(complaint.id) || [];
+  activities.push(activity);
+  MEMORY_ACTIVITIES.set(complaint.id, activities);
+
+  addInMemoryComplaint(complaint);
+
+  try {
+    const firestore = getAdminFirestore();
+    await firestore.collection("complaints").doc(complaint.id).update({
+      priority: complaint.priority,
+      updatedAt: complaint.updatedAt,
+    });
+    if (complaint.visibility === "public") {
+      await firestore.collection("publicComplaints").doc(complaint.id).update({
+        priority: complaint.priority,
+      });
+    }
+    await firestore.collection("complaintActivities").doc(activity.id).set(activity);
+  } catch (err) {
+    console.warn("Firestore update skipped/fallback:", err);
+  }
+
+  return complaint;
+}
+
+/**
+ * Returns activity log for a complaint
+ */
+export function getComplaintActivities(complaintId: string): ComplaintActivity[] {
+  return MEMORY_ACTIVITIES.get(complaintId) || [];
+}
+
 

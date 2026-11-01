@@ -212,7 +212,7 @@ export interface ComplaintActivity {
   actorName: string;
   actorRole: Role;
   action: string;
-  note?: string;
+  note?: string | undefined;
   createdAt: string;
   visibleToReporter: boolean;
   departmentId: string;
