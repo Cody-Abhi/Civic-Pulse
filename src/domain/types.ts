@@ -88,8 +88,8 @@ export interface GeoPoint {
   geohash6: string;
   wardId: string | null;
   wardName: string | null;
-  landmark?: string;
-  accuracyM?: number;
+  landmark?: string | undefined;
+  accuracyM?: number | undefined;
 }
 
 export interface PriorityLineItem {
@@ -186,4 +186,34 @@ export interface CategoryConfig {
   slaHours: number;
   timeSensitive: boolean;
   seasonMonths: number[];
+}
+
+export interface PublicComplaint {
+  id: string;
+  ref: string;
+  title: string;
+  description: string;
+  category: ComplaintCategory;
+  departmentId: string;
+  departmentName: string;
+  status: ComplaintStatus;
+  statusChangedAt: string;
+  location: GeoPoint;
+  priority: PriorityResult;
+  supporterCount: number;
+  independentReporterCount: number;
+  createdAt: string;
+}
+
+export interface ComplaintActivity {
+  id: string;
+  complaintId: string;
+  actorUid: string;
+  actorName: string;
+  actorRole: Role;
+  action: string;
+  note?: string;
+  createdAt: string;
+  visibleToReporter: boolean;
+  departmentId: string;
 }

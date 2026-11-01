@@ -23,13 +23,19 @@ export function getAdminApp(): App {
 
   const env = getServerEnv();
 
-  adminApp = initializeApp({
-    credential: cert({
+  if (env.FIREBASE_ADMIN_CLIENT_EMAIL && env.FIREBASE_ADMIN_PRIVATE_KEY) {
+    adminApp = initializeApp({
+      credential: cert({
+        projectId: env.FIREBASE_ADMIN_PROJECT_ID,
+        clientEmail: env.FIREBASE_ADMIN_CLIENT_EMAIL,
+        privateKey: env.FIREBASE_ADMIN_PRIVATE_KEY,
+      }),
+    });
+  } else {
+    adminApp = initializeApp({
       projectId: env.FIREBASE_ADMIN_PROJECT_ID,
-      clientEmail: env.FIREBASE_ADMIN_CLIENT_EMAIL,
-      privateKey: env.FIREBASE_ADMIN_PRIVATE_KEY,
-    }),
-  });
+    });
+  }
 
   return adminApp;
 }

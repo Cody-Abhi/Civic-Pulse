@@ -1,0 +1,12 @@
+{
+  "totalComplaints": 240,
+  "resolvedComplaints": 130,
+  "inProgressComplaints": 73,
+  "submittedComplaints": 25,
+  "criticalComplaints": 7,
+  "resolutionRate": 54.2,
+  "avgResolutionHours": 21.4,
+  "activeCitizens": 92,
+  "isSynthetic": true,
+  "updatedAt": "2026-11-01T14:55:00.067Z"
+}

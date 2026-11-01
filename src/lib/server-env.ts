@@ -16,12 +16,12 @@ const serverSchema = z.object({
   APP_URL: z.url().default("http://localhost:3000"),
   DEMO_MODE: boolish(true),
 
-  FIREBASE_ADMIN_PROJECT_ID: z.string().min(1),
-  FIREBASE_ADMIN_CLIENT_EMAIL: z.email(),
+  FIREBASE_ADMIN_PROJECT_ID: z.string().min(1).default("civic-pulse-4a203"),
+  FIREBASE_ADMIN_CLIENT_EMAIL: z.string().optional(),
   FIREBASE_ADMIN_PRIVATE_KEY: z
     .string()
-    .min(1)
-    .transform((k) => k.replace(/\\n/g, "\n")),
+    .optional()
+    .transform((k) => (k ? k.replace(/\\n/g, "\n") : undefined)),
   SESSION_COOKIE_NAME: z.string().min(1).default("__session"),
   SESSION_MAX_AGE_DAYS: z.coerce.number().int().positive().default(5),
 
