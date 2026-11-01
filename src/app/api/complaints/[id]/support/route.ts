@@ -1,22 +1,18 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { getSessionUser } from "@/server/auth/session";
+import { NextResponse } from "next/server";
+import { withApi, ApiError } from "@/server/http/with-api";
 import { supportComplaint } from "@/server/services/complaints";
 
 export const runtime = "nodejs";
 
-export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { id } = await context.params;
-    const user = await getSessionUser();
-    const actorUid = user?.uid || `anon-supporter-${Date.now().toString(36)}`;
+export const POST = withApi<unknown, { id: string }>(
+  {},
+  async (_req, { user, params }) => {
+    if (!user) {
+      throw new ApiError(401, "UNAUTHENTICATED", "Authentication required to support a complaint.");
+    }
 
-    const result = await supportComplaint(id, actorUid);
+    const { id } = params;
+    const result = await supportComplaint(id, user.uid);
     return NextResponse.json(result);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Failed to add support";
-    return NextResponse.json({ error: msg }, { status: 400 });
-  }
-}
+  },
+);

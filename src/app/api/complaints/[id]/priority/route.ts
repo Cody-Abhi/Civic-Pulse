@@ -1,51 +1,67 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { getSessionUser } from "@/server/auth/session";
-import { adjustComplaintPriority, setVerifiedSeverity } from "@/server/services/complaints";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { withApi, ApiError } from "@/server/http/with-api";
+import {
+  getComplaint,
+  adjustComplaintPriority,
+  setVerifiedSeverity,
+} from "@/server/services/complaints";
 import type { Severity } from "@/domain/types";
 
 export const runtime = "nodejs";
 
-export async function PATCH(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { id } = await context.params;
-    const user = await getSessionUser();
-    const json = await req.json();
+const priorityAdjustmentSchema = z.object({
+  adjustment: z.number().min(-15).max(15).optional(),
+  rationale: z.string().min(5).max(500).optional(),
+  verifiedSeverity: z.number().int().min(1).max(5).optional(),
+});
 
-    const { adjustment, rationale, verifiedSeverity } = json as {
-      adjustment?: number;
-      rationale?: string;
-      verifiedSeverity?: number;
-    };
+type PriorityAdjustmentBody = z.infer<typeof priorityAdjustmentSchema>;
 
-    if (typeof verifiedSeverity === "number") {
+export const PATCH = withApi<PriorityAdjustmentBody, { id: string }>(
+  {
+    roles: ["authority", "admin"],
+    schema: priorityAdjustmentSchema,
+  },
+  async (_req, { user, body, params }) => {
+    if (!user) {
+      throw new ApiError(401, "UNAUTHENTICATED", "Authentication required.");
+    }
+
+    const { id } = params;
+    const complaint = await getComplaint(id);
+    if (!complaint) {
+      throw new ApiError(404, "NOT_FOUND", "Complaint not found.");
+    }
+
+    if (user.role === "authority" && user.departmentId !== complaint.departmentId) {
+      throw new ApiError(404, "NOT_FOUND", "Complaint not found.");
+    }
+
+    if (typeof body.verifiedSeverity === "number") {
       const updated = await setVerifiedSeverity(
         id,
-        verifiedSeverity as Severity,
-        user?.uid || "authority-agent",
+        body.verifiedSeverity as Severity,
+        user.uid,
       );
       return NextResponse.json({ success: true, complaint: updated });
     }
 
-    if (typeof adjustment !== "number" || !rationale) {
-      return NextResponse.json(
-        { error: "adjustment (number between -15 and +15) and rationale are required" },
-        { status: 400 },
+    if (typeof body.adjustment !== "number" || !body.rationale) {
+      throw new ApiError(
+        400,
+        "VALIDATION_FAILED",
+        "adjustment (-15 to +15) and rationale (min 5 chars) are required for supervisor override.",
       );
     }
 
     const updated = await adjustComplaintPriority(
       id,
-      adjustment,
-      rationale,
-      user?.uid || "authority-agent",
+      body.adjustment,
+      body.rationale,
+      user.uid,
     );
 
     return NextResponse.json({ success: true, complaint: updated });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Failed to adjust complaint priority";
-    return NextResponse.json({ error: msg }, { status: 400 });
-  }
-}
+  },
+);

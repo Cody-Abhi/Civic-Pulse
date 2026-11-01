@@ -1,27 +1,25 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { getSessionUser } from "@/server/auth/session";
-import { createComplaint, listComplaints, createComplaintSchema } from "@/server/services/complaints";
+import { NextResponse } from "next/server";
+import { withApi, ApiError } from "@/server/http/with-api";
+import {
+  createComplaint,
+  listComplaints,
+  createComplaintSchema,
+  type CreateComplaintInput,
+} from "@/server/services/complaints";
 import type { ComplaintCategory } from "@/domain/schemas";
 
 export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
-  try {
-    const user = await getSessionUser();
+export const POST = withApi<CreateComplaintInput>(
+  {
+    schema: createComplaintSchema,
+  },
+  async (_req, { user, body }) => {
     if (!user) {
-      return NextResponse.json({ error: "Authentication required to submit complaint" }, { status: 401 });
+      throw new ApiError(401, "UNAUTHENTICATED", "Authentication required to submit complaint.");
     }
 
-    const json = await req.json();
-    const parsed = createComplaintSchema.safeParse(json);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validation failed", details: parsed.error.issues },
-        { status: 400 },
-      );
-    }
-
-    const { complaint, publicUrl } = await createComplaint(parsed.data, user);
+    const { complaint, publicUrl } = await createComplaint(body, user);
 
     return NextResponse.json(
       {
@@ -34,14 +32,14 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 },
     );
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: msg }, { status: 500 });
-  }
-}
+  },
+);
 
-export async function GET(req: NextRequest) {
-  try {
+export const GET = withApi(
+  {
+    public: true,
+  },
+  async (req, { user }) => {
     const url = new URL(req.url);
     const category = url.searchParams.get("category") as ComplaintCategory | null;
     const departmentId = url.searchParams.get("departmentId") || undefined;
@@ -54,7 +52,6 @@ export async function GET(req: NextRequest) {
     const userOnly = url.searchParams.get("mine") === "true";
     const limit = url.searchParams.get("limit") ? parseInt(url.searchParams.get("limit")!, 10) : 250;
 
-    const user = await getSessionUser();
     const userId = userOnly && user ? user.uid : undefined;
 
     const complaints = await listComplaints({
@@ -70,9 +67,6 @@ export async function GET(req: NextRequest) {
       limit,
     });
 
-    return NextResponse.json({ complaints, total: complaints.length });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Failed to retrieve complaints";
-    return NextResponse.json({ error: msg }, { status: 500 });
-  }
-}
+    return NextResponse.json(complaints);
+  },
+);

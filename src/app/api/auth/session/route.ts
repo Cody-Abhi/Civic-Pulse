@@ -8,27 +8,22 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    let tokenOrEmail = body.idToken || (body.demoEmail ? `demo:${body.demoEmail}` : null);
-    if (!tokenOrEmail && body.demoRole) {
-      const env = getServerEnv();
-      const email =
-        body.demoRole === "admin"
-          ? env.DEMO_ADMIN_EMAIL
-          : body.demoRole === "authority"
-            ? env.DEMO_AUTHORITY_EMAIL
-            : env.DEMO_CITIZEN_EMAIL;
-      tokenOrEmail = `demo:${email}`;
-    }
+    const body = await req.json().catch(() => ({}));
+    const idToken = body.idToken;
 
-    if (!tokenOrEmail) {
+    if (!idToken || typeof idToken !== "string") {
       return NextResponse.json(
-        { error: "Missing authentication credential (idToken, demoEmail or demoRole required)" },
+        {
+          error: {
+            code: "VALIDATION_FAILED",
+            message: "Missing or invalid idToken in request body",
+          },
+        },
         { status: 400 },
       );
     }
 
-    const { user, cookieValue, maxAgeSeconds } = await createSessionCookie(tokenOrEmail);
+    const { user, cookieValue, maxAgeSeconds } = await createSessionCookie(idToken);
     const env = getServerEnv();
     const cookieStore = await cookies();
 

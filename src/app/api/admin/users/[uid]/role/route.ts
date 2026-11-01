@@ -1,32 +1,34 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/server/auth/session";
+import { z } from "zod";
+import { withApi, ApiError } from "@/server/http/with-api";
 import { updateUserRole } from "@/server/services/admin";
-import type { Role } from "@/domain/schemas";
+import { ROLES, type Role } from "@/domain/schemas";
 
-export async function POST(
-  request: Request,
-  context: { params: Promise<{ uid: string }> },
-) {
-  const user = await getSessionUser();
-  if (!user || user.role !== "admin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+export const runtime = "nodejs";
 
-  const { uid } = await context.params;
+const updateRoleSchema = z.object({
+  role: z.enum(ROLES),
+  departmentId: z.string().nullable().optional(),
+});
 
-  try {
-    const body = (await request.json()) as { role: Role; departmentId?: string | null };
-    const updated = updateUserRole(uid, body.role, body.departmentId || null, user);
-    return NextResponse.json({ success: true, user: updated });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg === "LAST_ADMIN") {
-      return NextResponse.json(
-        { error: "Cannot demote the last remaining active platform administrator." },
-        { status: 409 },
-      );
+type UpdateRoleBody = z.infer<typeof updateRoleSchema>;
+
+export const POST = withApi<UpdateRoleBody, { uid: string }>(
+  {
+    roles: ["admin"],
+    schema: updateRoleSchema,
+  },
+  async (_req, { user, body, params }) => {
+    const { uid } = params;
+    try {
+      const updated = await updateUserRole(uid, body.role as Role, body.departmentId || null, user!);
+      return NextResponse.json({ success: true, user: updated });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg === "LAST_ADMIN") {
+        throw new ApiError(409, "LAST_ADMIN", "Cannot demote the last remaining active platform administrator.");
+      }
+      throw err;
     }
-    return NextResponse.json({ error: msg }, { status: 400 });
-  }
-}
-
+  },
+);

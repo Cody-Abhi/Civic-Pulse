@@ -1,42 +1,123 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { getSessionUser } from "@/server/auth/session";
-import { updateComplaintStatus } from "@/server/services/complaints";
-import type { ComplaintStatus, RejectReason } from "@/domain/types";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { withApi, ApiError } from "@/server/http/with-api";
+import { getComplaint, updateComplaintStatus } from "@/server/services/complaints";
+import { validateTransition } from "@/domain/transitions";
 
 export const runtime = "nodejs";
 
-export async function PATCH(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { id } = await context.params;
-    const user = await getSessionUser();
-    const json = await req.json();
+const updateStatusSchema = z.object({
+  status: z.enum([
+    "SUBMITTED",
+    "UNDER_REVIEW",
+    "ASSIGNED",
+    "IN_PROGRESS",
+    "RESOLVED",
+    "CLOSED",
+    "REJECTED",
+    "REOPENED",
+  ]),
+  expectedStatus: z.enum([
+    "SUBMITTED",
+    "UNDER_REVIEW",
+    "ASSIGNED",
+    "IN_PROGRESS",
+    "RESOLVED",
+    "CLOSED",
+    "REJECTED",
+    "REOPENED",
+  ]).optional(),
+  note: z.string().optional(),
+  resolutionNote: z.string().optional(),
+  rejectReason: z.enum([
+    "DUPLICATE",
+    "OUT_OF_JURISDICTION",
+    "INSUFFICIENT_INFO",
+    "SPAM",
+    "WITHDRAWN_BY_REPORTER",
+  ]).optional(),
+  targetDepartmentId: z.string().optional(),
+  assignedToUid: z.string().optional(),
+  duplicateOfId: z.string().optional(),
+});
 
-    const { status, note, resolutionNote, rejectReason } = json as {
-      status: ComplaintStatus;
-      note?: string;
-      resolutionNote?: string;
-      rejectReason?: RejectReason;
-    };
+type UpdateStatusBody = z.infer<typeof updateStatusSchema>;
 
-    if (!status) {
-      return NextResponse.json({ error: "status is required" }, { status: 400 });
+export const PATCH = withApi<UpdateStatusBody, { id: string }>(
+  {
+    roles: ["authority", "admin"],
+    schema: updateStatusSchema,
+  },
+  async (_req, { user, body, params }) => {
+    if (!user) {
+      throw new ApiError(401, "UNAUTHENTICATED", "Authentication required.");
     }
 
-    const updated = await updateComplaintStatus(id, status, {
-      note,
-      resolutionNote,
-      rejectReason,
-      actorUid: user?.uid || "authority-agent",
-      actorName: user?.displayName || "Municipal Engineer",
-      actorRole: user?.role || "authority",
+    const { id } = params;
+    const complaint = await getComplaint(id);
+    if (!complaint) {
+      throw new ApiError(404, "NOT_FOUND", "Complaint not found.");
+    }
+
+    // PRD §21.2: 404 for out-of-scope resources (authority in different department)
+    if (user.role === "authority" && user.departmentId !== complaint.departmentId) {
+      throw new ApiError(404, "NOT_FOUND", "Complaint not found.");
+    }
+
+    // Lifecycle state machine validation (§21.5)
+    const transitionResult = validateTransition(
+      {
+        uid: user.uid,
+        role: user.role,
+        departmentId: user.departmentId,
+      },
+      {
+        status: complaint.status,
+        departmentId: complaint.departmentId,
+        reporterUid: complaint.reporterUid,
+        reopenCount: complaint.reopenCount || 0,
+        resolvedAtMs: complaint.resolution?.resolvedAt
+          ? new Date(complaint.resolution.resolvedAt).getTime()
+          : null,
+        visibility: complaint.visibility,
+      },
+      {
+        to: body.status,
+        nowMs: Date.now(),
+        expectedStatus: body.expectedStatus,
+        reason: body.rejectReason,
+        note: body.note,
+        resolutionNote: body.resolutionNote,
+        targetDepartmentId: body.targetDepartmentId,
+        assignedToUid: body.assignedToUid,
+        duplicateOfId: body.duplicateOfId,
+      },
+    );
+
+    if (!transitionResult.ok) {
+      if (transitionResult.code === "STATUS_CONFLICT") {
+        throw new ApiError(
+          409,
+          "INVALID_TRANSITION",
+          transitionResult.message,
+          { currentStatus: complaint.status, expectedStatus: body.expectedStatus },
+        );
+      }
+      if (transitionResult.code === "FORBIDDEN") {
+        throw new ApiError(403, "FORBIDDEN", transitionResult.message);
+      }
+      throw new ApiError(400, transitionResult.code, transitionResult.message);
+    }
+
+    const updated = await updateComplaintStatus(id, body.status, {
+      note: body.note,
+      resolutionNote: body.resolutionNote,
+      rejectReason: body.rejectReason,
+      actorUid: user.uid,
+      actorName: user.displayName,
+      actorRole: user.role,
     });
 
     return NextResponse.json({ success: true, complaint: updated });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Failed to update complaint status";
-    return NextResponse.json({ error: msg }, { status: 400 });
-  }
-}
+  },
+);

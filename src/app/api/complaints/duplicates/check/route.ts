@@ -1,6 +1,7 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { checkNearbyDuplicates } from "@/server/services/ai";
+import { NextResponse } from "next/server";
 import { z } from "zod";
+import { withApi } from "@/server/http/with-api";
+import { checkNearbyDuplicates } from "@/server/services/ai";
 import { CATEGORIES } from "@/domain/schemas";
 
 export const runtime = "nodejs";
@@ -13,24 +14,19 @@ const duplicateCheckSchema = z.object({
   excludeId: z.string().optional(),
 });
 
-export async function POST(req: NextRequest) {
-  try {
-    const json = await req.json().catch(() => ({}));
-    const parsed = duplicateCheckSchema.safeParse(json);
+type DuplicateCheckBody = z.infer<typeof duplicateCheckSchema>;
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validation failed", details: parsed.error.issues },
-        { status: 400 },
-      );
-    }
-
+export const POST = withApi<DuplicateCheckBody>(
+  {
+    schema: duplicateCheckSchema,
+  },
+  async (_req, { body }) => {
     const { candidates, method } = await checkNearbyDuplicates({
-      lat: parsed.data.lat,
-      lng: parsed.data.lng,
-      category: parsed.data.category,
-      text: parsed.data.text,
-      excludeId: parsed.data.excludeId,
+      lat: body.lat,
+      lng: body.lng,
+      category: body.category,
+      text: body.text,
+      excludeId: body.excludeId,
     });
 
     return NextResponse.json(
@@ -40,9 +36,5 @@ export async function POST(req: NextRequest) {
       },
       { status: 200 },
     );
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Failed to check duplicates";
-    return NextResponse.json({ error: msg }, { status: 500 });
-  }
-}
-
+  },
+);

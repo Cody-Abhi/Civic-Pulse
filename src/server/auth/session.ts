@@ -15,42 +15,9 @@ export interface SessionUser {
   homeWardId: string | null;
 }
 
-const DEMO_USERS: Record<string, SessionUser> = {
-  "citizen@demo.civicpulse.invalid": {
-    uid: "demo-citizen-uid",
-    email: "citizen@demo.civicpulse.invalid",
-    displayName: "Aarav Patel",
-    role: "citizen",
-    departmentId: null,
-    status: "active",
-    emailVerified: true,
-    homeWardId: "ward-150-bellandur",
-  },
-  "roads@demo.civicpulse.invalid": {
-    uid: "demo-authority-uid",
-    email: "roads@demo.civicpulse.invalid",
-    displayName: "K. Suresh (EE Roads)",
-    role: "authority",
-    departmentId: "roads",
-    status: "active",
-    emailVerified: true,
-    homeWardId: "ward-150-bellandur",
-  },
-  "admin@demo.civicpulse.invalid": {
-    uid: "demo-admin-uid",
-    email: "admin@demo.civicpulse.invalid",
-    displayName: "Civic Administrator",
-    role: "admin",
-    departmentId: null,
-    status: "active",
-    emailVerified: true,
-    homeWardId: null,
-  },
-};
-
 /**
- * Validates the session cookie from incoming request headers.
- * Supports production Firebase Auth session cookies and demo mock sessions in dev.
+ * Validates the session cookie from incoming request headers using Firebase Admin SDK.
+ * Checks revocation and verifies user status.
  */
 export async function getSessionUser(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
@@ -58,16 +25,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const sessionCookie = cookieStore.get(env.SESSION_COOKIE_NAME)?.value;
 
   if (!sessionCookie) {
-    if (env.DEMO_MODE) {
-      return DEMO_USERS["citizen@demo.civicpulse.invalid"] || null;
-    }
     return null;
-  }
-
-  // Check demo user cookie tokens
-  if (sessionCookie.startsWith("demo:")) {
-    const email = sessionCookie.replace("demo:", "");
-    return DEMO_USERS[email] || null;
   }
 
   try {
@@ -85,12 +43,12 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     return {
       uid: decodedClaims.uid,
       email: decodedClaims.email || "",
-      displayName: userData?.displayName || decodedClaims.name || "Citizen",
-      role: (decodedClaims.role || userData?.role || "citizen") as Role,
-      departmentId: (decodedClaims.departmentId || userData?.departmentId || null) as string | null,
-      status: (decodedClaims.status || userData?.status || "active") as "active" | "suspended",
+      displayName: (userData?.displayName as string) || (decodedClaims.name as string) || "Citizen",
+      role: ((decodedClaims.role as Role) || (userData?.role as Role) || "citizen") as Role,
+      departmentId: ((decodedClaims.departmentId as string) || (userData?.departmentId as string) || null) as string | null,
+      status: ((decodedClaims.status as "active" | "suspended") || (userData?.status as "active" | "suspended") || "active") as "active" | "suspended",
       emailVerified: Boolean(decodedClaims.email_verified),
-      homeWardId: (userData?.homeWardId || null) as string | null,
+      homeWardId: ((userData?.homeWardId as string) || null) as string | null,
     };
   } catch {
     return null;
@@ -98,40 +56,33 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 }
 
 /**
- * Creates and sets the session cookie on the response.
+ * Creates and sets the session cookie on the response from a valid Firebase ID token.
  */
 export async function createSessionCookie(
-  idTokenOrDemoEmail: string,
+  idToken: string,
 ): Promise<{ user: SessionUser; cookieValue: string; maxAgeSeconds: number }> {
   const env = getServerEnv();
   const maxAgeSeconds = env.SESSION_MAX_AGE_DAYS * 24 * 60 * 60;
 
-  if (idTokenOrDemoEmail.startsWith("demo:")) {
-    const email = idTokenOrDemoEmail.replace("demo:", "");
-    const user = DEMO_USERS[email];
-    if (!user) throw new Error("Demo user not found");
-    return {
-      user,
-      cookieValue: `demo:${email}`,
-      maxAgeSeconds,
-    };
-  }
-
   const auth = getAdminAuth();
-  const sessionCookie = await auth.createSessionCookie(idTokenOrDemoEmail, {
+  const sessionCookie = await auth.createSessionCookie(idToken, {
     expiresIn: maxAgeSeconds * 1000,
   });
 
-  const decodedClaims = await auth.verifySessionCookie(sessionCookie);
+  const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+  const firestore = getAdminFirestore();
+  const userDoc = await firestore.collection("users").doc(decodedClaims.uid).get();
+  const userData = userDoc.data();
+
   const user: SessionUser = {
     uid: decodedClaims.uid,
     email: decodedClaims.email || "",
-    displayName: decodedClaims.name || "Citizen",
-    role: (decodedClaims.role as Role) || "citizen",
-    departmentId: (decodedClaims.departmentId as string) || null,
-    status: (decodedClaims.status as "active" | "suspended") || "active",
+    displayName: (userData?.displayName as string) || (decodedClaims.name as string) || "Citizen",
+    role: ((decodedClaims.role as Role) || (userData?.role as Role) || "citizen") as Role,
+    departmentId: ((decodedClaims.departmentId as string) || (userData?.departmentId as string) || null) as string | null,
+    status: ((decodedClaims.status as "active" | "suspended") || (userData?.status as "active" | "suspended") || "active") as "active" | "suspended",
     emailVerified: Boolean(decodedClaims.email_verified),
-    homeWardId: null,
+    homeWardId: (userData?.homeWardId as string) || null,
   };
 
   return {

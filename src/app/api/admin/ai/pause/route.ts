@@ -1,20 +1,23 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/server/auth/session";
+import { z } from "zod";
+import { withApi } from "@/server/http/with-api";
 import { setAiPaused } from "@/server/services/admin";
 
-export async function POST(request: Request) {
-  const user = await getSessionUser();
-  if (!user || user.role !== "admin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+export const runtime = "nodejs";
 
-  try {
-    const body = (await request.json()) as { paused: boolean };
-    const res = setAiPaused(Boolean(body.paused), user);
+const pauseSchema = z.object({
+  paused: z.boolean(),
+});
+
+type PauseBody = z.infer<typeof pauseSchema>;
+
+export const POST = withApi<PauseBody>(
+  {
+    roles: ["admin"],
+    schema: pauseSchema,
+  },
+  async (_req, { user, body }) => {
+    const res = setAiPaused(body.paused, user!);
     return NextResponse.json({ success: true, ...res });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: msg }, { status: 400 });
-  }
-}
-
+  },
+);

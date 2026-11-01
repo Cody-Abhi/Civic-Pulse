@@ -1,31 +1,33 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/server/auth/session";
+import { z } from "zod";
+import { withApi, ApiError } from "@/server/http/with-api";
 import { updateUserStatus } from "@/server/services/admin";
 
-export async function POST(
-  request: Request,
-  context: { params: Promise<{ uid: string }> },
-) {
-  const user = await getSessionUser();
-  if (!user || user.role !== "admin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+export const runtime = "nodejs";
 
-  const { uid } = await context.params;
+const updateStatusSchema = z.object({
+  status: z.enum(["active", "suspended"]),
+  reason: z.string().optional().default("Administrative review"),
+});
 
-  try {
-    const body = (await request.json()) as { status: "active" | "suspended"; reason: string };
-    const updated = updateUserStatus(uid, body.status, body.reason || "Administrative review", user);
-    return NextResponse.json({ success: true, user: updated });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg === "LAST_ADMIN") {
-      return NextResponse.json(
-        { error: "Cannot suspend the last remaining active platform administrator." },
-        { status: 409 },
-      );
+type UpdateStatusBody = z.infer<typeof updateStatusSchema>;
+
+export const POST = withApi<UpdateStatusBody, { uid: string }>(
+  {
+    roles: ["admin"],
+    schema: updateStatusSchema,
+  },
+  async (_req, { user, body, params }) => {
+    const { uid } = params;
+    try {
+      const updated = await updateUserStatus(uid, body.status, body.reason, user!);
+      return NextResponse.json({ success: true, user: updated });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg === "LAST_ADMIN") {
+        throw new ApiError(409, "LAST_ADMIN", "Cannot suspend the last remaining active platform administrator.");
+      }
+      throw err;
     }
-    return NextResponse.json({ error: msg }, { status: 400 });
-  }
-}
-
+  },
+);

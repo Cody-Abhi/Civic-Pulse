@@ -23,15 +23,15 @@ export interface TransitionComplaint {
 export interface TransitionRequest {
   to: ComplaintStatus;
   nowMs: number;
-  expectedStatus?: ComplaintStatus;
-  reason?: RejectReason;
-  note?: string;
-  targetDepartmentId?: string;
-  assignedToUid?: string;
-  duplicateOfId?: string;
-  feedbackRating?: number;
-  resolutionNote?: string;
-  reopenReason?: string;
+  expectedStatus?: ComplaintStatus | undefined;
+  reason?: RejectReason | undefined;
+  note?: string | undefined;
+  targetDepartmentId?: string | undefined;
+  assignedToUid?: string | undefined;
+  duplicateOfId?: string | undefined;
+  feedbackRating?: number | undefined;
+  resolutionNote?: string | undefined;
+  reopenReason?: string | undefined;
 }
 
 export type TransitionCode =

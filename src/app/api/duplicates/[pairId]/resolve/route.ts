@@ -1,7 +1,7 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { getSessionUser } from "@/server/auth/session";
-import { resolveDuplicatePair } from "@/server/services/ai";
+import { NextResponse } from "next/server";
 import { z } from "zod";
+import { withApi } from "@/server/http/with-api";
+import { resolveDuplicatePair } from "@/server/services/ai";
 
 export const runtime = "nodejs";
 
@@ -11,39 +11,23 @@ const resolveSchema = z.object({
   note: z.string().max(500).optional(),
 });
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ pairId: string }> },
-) {
-  try {
-    const user = await getSessionUser();
-    if (!user || (user.role !== "authority" && user.role !== "admin")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+type ResolveBody = z.infer<typeof resolveSchema>;
 
-    const { pairId } = await params;
-    const json = await req.json().catch(() => ({}));
-    const parsed = resolveSchema.safeParse(json);
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validation failed", details: parsed.error.issues },
-        { status: 400 },
-      );
-    }
-
+export const POST = withApi<ResolveBody, { pairId: string }>(
+  {
+    roles: ["authority", "admin"],
+    schema: resolveSchema,
+  },
+  async (_req, { user, body, params }) => {
+    const { pairId } = params;
     const result = await resolveDuplicatePair(
       pairId,
-      parsed.data.decision,
-      parsed.data.rootId,
-      parsed.data.note,
-      user,
+      body.decision,
+      body.rootId,
+      body.note,
+      user!,
     );
 
     return NextResponse.json({ success: true, result }, { status: 200 });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Failed to resolve duplicate";
-    return NextResponse.json({ error: msg }, { status: 500 });
-  }
-}
-
+  },
+);

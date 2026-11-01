@@ -1,30 +1,34 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/server/auth/session";
+import { z } from "zod";
+import { withApi } from "@/server/http/with-api";
 import { getSystemSettings, updateSystemSettings } from "@/server/services/admin";
 import type { SystemSettings } from "@/domain/types";
 
-export async function GET() {
-  const user = await getSessionUser();
-  if (!user || user.role !== "admin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+export const runtime = "nodejs";
 
-  return NextResponse.json(getSystemSettings());
-}
+export const GET = withApi(
+  {
+    roles: ["admin"],
+  },
+  async () => {
+    return NextResponse.json(getSystemSettings());
+  },
+);
 
-export async function PATCH(request: Request) {
-  const user = await getSessionUser();
-  if (!user || user.role !== "admin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+const updateSettingsSchema = z.object({
+  section: z.string(),
+  values: z.unknown(),
+});
 
-  try {
-    const body = (await request.json()) as { section: keyof SystemSettings; values: unknown };
-    const updated = updateSystemSettings(body.section, body.values, user);
+type UpdateSettingsBody = z.infer<typeof updateSettingsSchema>;
+
+export const PATCH = withApi<UpdateSettingsBody>(
+  {
+    roles: ["admin"],
+    schema: updateSettingsSchema,
+  },
+  async (_req, { user, body }) => {
+    const updated = updateSystemSettings(body.section as keyof SystemSettings, body.values, user!);
     return NextResponse.json({ success: true, settings: updated });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: msg }, { status: 400 });
-  }
-}
-
+  },
+);
