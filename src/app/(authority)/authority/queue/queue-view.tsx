@@ -9,6 +9,10 @@ import {
   Clock,
   RotateCcw,
   ExternalLink,
+  Download,
+  LayoutGrid,
+  ListFilter,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -18,7 +22,7 @@ import { ReferenceChip } from "@/components/ui/reference-chip";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { DataTable } from "@/components/data/data-table";
 import type { ColumnDef } from "@/components/data/data-table.types";
-import type { Complaint } from "@/domain/types";
+import type { Complaint, ComplaintStatus } from "@/domain/types";
 
 interface QueueViewProps {
   initialComplaints: Complaint[];
@@ -61,6 +65,11 @@ export function QueueView({ initialComplaints }: QueueViewProps) {
   const [category, setCategory] = React.useState("ALL");
   const [ward, setWard] = React.useState("All Wards");
   const [statusTab, setStatusTab] = React.useState("ALL_ACTIVE");
+  const [viewMode, setViewMode] = React.useState<"table" | "kanban">("table");
+  const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+  const [bulkStatus, setBulkStatus] = React.useState<ComplaintStatus>("IN_PROGRESS");
+  const [bulkLoading, setBulkLoading] = React.useState(false);
+  const [bulkFeedback, setBulkFeedback] = React.useState<string | null>(null);
   const [sort, setSort] = React.useState<{ field: string; direction: "asc" | "desc" }>({
     field: "score",
     direction: "desc",
@@ -127,6 +136,38 @@ export function QueueView({ initialComplaints }: QueueViewProps) {
     setWard("All Wards");
     setStatusTab("ALL_ACTIVE");
     setSort({ field: "score", direction: "desc" });
+    setSelectedIds([]);
+  };
+
+  const handleBulkTransition = async () => {
+    if (selectedIds.length === 0) return;
+    setBulkLoading(true);
+    try {
+      const res = await fetch("/api/complaints/bulk-transition", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ids: selectedIds,
+          targetStatus: bulkStatus,
+          note: `Bulk transitioned to ${bulkStatus} by municipal supervisor`,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || "Bulk transition failed.");
+      }
+      const data = await res.json();
+      setBulkFeedback(`Successfully updated ${data.data.transitionedCount} complaints.`);
+      setSelectedIds([]);
+      setTimeout(() => {
+        setBulkFeedback(null);
+        router.refresh();
+      }, 2000);
+    } catch (err) {
+      setBulkFeedback(err instanceof Error ? err.message : "Error updating complaints.");
+    } finally {
+      setBulkLoading(false);
+    }
   };
 
   // Columns definition for DataTable
@@ -257,13 +298,59 @@ export function QueueView({ initialComplaints }: QueueViewProps) {
           </p>
         </div>
 
-        <Link href="/authority/map">
-          <Button variant="outline" size="sm" className="h-9 gap-1.5 font-semibold self-start sm:self-auto">
-            <Icon icon={ExternalLink} size={14} />
-            <span>Map View</span>
-          </Button>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* View Mode Toggle: Table vs Kanban (§UI-08..14) */}
+          <div className="flex items-center rounded-lg border border-border bg-surface p-0.5 text-xs">
+            <button
+              type="button"
+              aria-label="Switch to queue table view"
+              onClick={() => setViewMode("table")}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-semibold transition-colors ${
+                viewMode === "table"
+                  ? "bg-primary text-white shadow-xs"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              <Icon icon={ListFilter} size={14} />
+              <span>Queue</span>
+            </button>
+            <button
+              type="button"
+              aria-label="Switch to kanban status board"
+              onClick={() => setViewMode("kanban")}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-semibold transition-colors ${
+                viewMode === "kanban"
+                  ? "bg-primary text-white shadow-xs"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              <Icon icon={LayoutGrid} size={14} />
+              <span>Kanban</span>
+            </button>
+          </div>
+
+          <a href="/api/exports/complaints.csv" download="complaints.csv">
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 font-semibold">
+              <Icon icon={Download} size={14} />
+              <span>Export CSV</span>
+            </Button>
+          </a>
+
+          <Link href="/authority/map">
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 font-semibold">
+              <Icon icon={ExternalLink} size={14} />
+              <span>Map View</span>
+            </Button>
+          </Link>
+        </div>
       </div>
+
+      {bulkFeedback && (
+        <div className="rounded-md border border-primary/30 bg-primary/10 p-3 text-xs font-semibold text-primary flex items-center gap-2">
+          <Icon icon={CheckCircle2} size={16} />
+          <span>{bulkFeedback}</span>
+        </div>
+      )}
 
       {/* ── Status Filter Tabs ── */}
       <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border pb-2">
@@ -357,26 +444,129 @@ export function QueueView({ initialComplaints }: QueueViewProps) {
         </div>
       </div>
 
-      {/* ── Table / QueueCardList Container ── */}
-      <DataTable<Complaint>
-        columns={columns}
-        rows={filteredRows}
-        status="ready"
-        sort={sort}
-        onSortChange={setSort}
-        onRowOpen={(row) => router.push(`/authority/complaints/${row.id}`)}
-        mobileRow={renderMobileRow}
-        caption="Operational Priority Queue"
-        empty={{
-          title: "No issues in this queue view",
-          body: "No complaints match your active filter criteria.",
-          action: (
-            <Button variant="outline" size="sm" onClick={handleReset}>
-              Reset filters
+      {/* ── View: Table vs Kanban ── */}
+      {viewMode === "table" ? (
+        <DataTable<Complaint>
+          columns={columns}
+          rows={filteredRows}
+          status="ready"
+          sort={sort}
+          onSortChange={setSort}
+          selectable={true}
+          selectedIds={new Set(selectedIds)}
+          onSelectionChange={(set) => setSelectedIds(Array.from(set))}
+          onRowOpen={(row) => router.push(`/authority/complaints/${row.id}`)}
+          mobileRow={renderMobileRow}
+          caption="Operational Priority Queue"
+          empty={{
+            title: "No issues in this queue view",
+            body: "No complaints match your active filter criteria.",
+            action: (
+              <Button variant="outline" size="sm" onClick={handleReset}>
+                Reset filters
+              </Button>
+            ),
+          }}
+        />
+      ) : (
+        /* ── Kanban View (§UI-09) ── */
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {(["SUBMITTED", "UNDER_REVIEW", "IN_PROGRESS", "RESOLVED"] as const).map((colStatus) => {
+            const colComplaints = filteredRows.filter((c) => c.status === colStatus);
+            const colTitles: Record<string, string> = {
+              SUBMITTED: "Submitted (New)",
+              UNDER_REVIEW: "Under Review",
+              IN_PROGRESS: "In Progress (Field)",
+              RESOLVED: "Resolved",
+            };
+
+            return (
+              <div key={colStatus} className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-xs">
+                <div className="flex items-center justify-between border-b border-border pb-2.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-ink">
+                    {colTitles[colStatus]}
+                  </span>
+                  <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-mono font-bold text-muted">
+                    {colComplaints.length}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-3 overflow-y-auto max-h-[600px] pr-1">
+                  {colComplaints.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-muted">
+                      No complaints in this lane
+                    </div>
+                  ) : (
+                    colComplaints.map((c) => (
+                      <Link
+                        key={c.id}
+                        href={`/authority/complaints/${c.id}`}
+                        className="flex flex-col gap-2 rounded-lg border border-border bg-canvas p-3.5 hover:border-primary transition-all shadow-xs"
+                      >
+                        <div className="flex items-center justify-between gap-1">
+                          <ReferenceChip reference={c.ref} copyable={false} />
+                          <PriorityBadge band={c.priority.band} score={c.priority.score} size="sm" />
+                        </div>
+                        <h4 className="line-clamp-2 text-xs font-bold text-ink">
+                          {c.title}
+                        </h4>
+                        <div className="flex items-center justify-between text-[11px] text-muted pt-1 border-t border-border/60">
+                          <span>{c.location.wardName || "Bengaluru"}</span>
+                          <span className="font-semibold text-primary">Triage →</span>
+                        </div>
+                      </Link>
+                    ))
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Sticky Bulk Actions Bar (§UI-08) ── */}
+      {selectedIds.length > 0 && (
+        <div className="sticky bottom-4 z-30 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-surface p-4 shadow-xl">
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+              {selectedIds.length}
+            </span>
+            <span className="text-sm font-semibold text-ink">complaints selected</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={bulkStatus}
+              aria-label="Target status for bulk transition"
+              onChange={(e) => setBulkStatus(e.target.value as ComplaintStatus)}
+              className="h-9 rounded-md border border-border bg-canvas px-3 text-xs font-semibold text-ink focus:border-primary focus:outline-none"
+            >
+              <option value="UNDER_REVIEW">Transition to Under Review</option>
+              <option value="IN_PROGRESS">Transition to In Progress</option>
+              <option value="RESOLVED">Transition to Resolved</option>
+              <option value="CLOSED">Transition to Closed</option>
+            </select>
+
+            <Button
+              size="sm"
+              onClick={handleBulkTransition}
+              disabled={bulkLoading}
+              className="h-9 gap-1.5 text-xs font-semibold"
+            >
+              {bulkLoading ? "Updating..." : "Apply Bulk Status"}
             </Button>
-          ),
-        }}
-      />
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedIds([])}
+              className="h-9 text-xs text-muted hover:text-ink"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

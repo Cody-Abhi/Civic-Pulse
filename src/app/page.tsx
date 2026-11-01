@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   Compass,
   Users,
+  Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -16,6 +17,7 @@ import { PublicFooter } from "@/components/layout/public-footer";
 import { PriorityReceipt } from "@/components/ai/priority-receipt";
 import { MetricStrip } from "@/components/data/metric-strip";
 import { DemoBadge } from "@/components/ui/demo-badge";
+import { getCityMetrics } from "@/server/repositories/metrics.repo";
 import type { PriorityResult } from "@/domain/types";
 
 // Realistic demonstration receipt for UI-01 Hero (§29.5)
@@ -47,17 +49,42 @@ const DEMO_RECEIPT: PriorityResult = {
   ],
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const metrics = await getCityMetrics();
+  const bbmpCount = metrics.openByDepartment["ROADS"] || 128;
+  const bescomCount = metrics.openByDepartment["BESCOM"] || 42;
+  const bwssbCount = metrics.openByDepartment["BWSSB"] || 76;
+  const ward150Count = metrics.openByWard["ward-150"] || 94;
+  const ward174Count = metrics.openByWard["ward-174"] || 88;
+  const avgSla = (metrics.avgResolutionHours || 22.4).toFixed(1);
+
   return (
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
       <PublicTopbar />
 
       <main id="main" className="flex flex-1 flex-col">
+        {/* ── Live Metric Ticker (§UI-01) ── */}
+        <div className="border-b border-border bg-surface-muted py-2.5 px-4">
+          <div className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-semibold text-ink">Live Metric Ticker:</span>
+              <span className="font-mono text-ink-secondary">
+                BBMP {bbmpCount} / BESCOM {bescomCount} / BWSSB {bwssbCount} / Ward 150 {ward150Count} / Ward 174 {ward174Count} / Avg SLA {avgSla}h
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-muted">From cityMetrics/totals</span>
+              <DemoBadge size="sm" />
+            </div>
+          </div>
+        </div>
+
         {/* ── 1. Hero Section ── */}
         <section className="relative overflow-hidden border-b border-border bg-gradient-to-b from-surface to-canvas py-16 md:py-24">
           <div className="mx-auto max-w-[1360px] px-4 md:px-8">
             <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-16">
-              {/* Left Copy (6 cols on desktop) */}
+              {/* Left Copy (7 cols on desktop) */}
               <div className="flex flex-col gap-6 lg:col-span-7">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted shadow-xs">
                   <span className="flex h-2 w-2 rounded-full bg-primary" />
@@ -118,78 +145,146 @@ export default function HomePage() {
                 </h2>
                 <DemoBadge size="sm" />
               </div>
-              <span className="text-xs text-muted">Updated daily</span>
+              <span className="text-xs text-muted">Realtime Firestore sync</span>
             </div>
 
             <MetricStrip
               items={[
-                { label: "Reports filed", value: 1247, unit: "count" },
-                { label: "Resolution rate", value: 87.3, unit: "percent", hint: "Resolved against total filed" },
-                { label: "Avg. response time", value: 18.4, unit: "hours", hint: "Average hours to verified action" },
-                { label: "Duplicates prevented", value: 412, unit: "count", hint: "Citizens joined existing issues" },
+                { label: "Reports filed", value: metrics.totalComplaints || 240, unit: "count" },
+                { label: "Resolution rate", value: metrics.resolutionRate || 87.3, unit: "percent", hint: "Resolved against total filed" },
+                { label: "Avg. response time", value: Number(avgSla), unit: "hours", hint: "Average hours to verified action" },
+                { label: "Active citizens", value: metrics.activeCitizens || 45, unit: "count", hint: "Engaged in verified wards" },
               ]}
             />
           </div>
         </section>
 
-        {/* ── 3. How It Works (4-Step Sequence) ── */}
+        {/* ── 3. 3-Step Reporting Visual with Genuine Screen Mockups (§UI-01) ── */}
         <section className="border-b border-border bg-canvas py-16 md:py-24">
           <div className="mx-auto max-w-[1360px] px-4 md:px-8">
             <div className="mb-12 flex flex-col gap-2">
               <span className="text-xs font-bold tracking-wider text-primary uppercase">
-                Workflow
+                Reporting Workflow
               </span>
               <h2 className="text-2xl font-bold tracking-tight text-ink md:text-3xl">
-                How CivicPulse works in 4 steps
+                3 steps to verified city action
               </h2>
-              <p className="text-sm text-muted">
-                A verified loop connecting citizens and municipal teams.
+              <p className="max-w-[72ch] text-base text-muted">
+                Engineered for speed, privacy, and full civic transparency.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {/* Step 1 */}
-              <div className="flex flex-col gap-3 rounded-md border border-border bg-surface p-6 shadow-xs">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-subtle text-primary font-bold">
-                  1
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+              {/* Step 1 Mockup */}
+              <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-xs">
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <div className="flex items-center gap-2 font-mono text-xs font-bold text-ink">
+                    <span className="flex h-6 w-6 items-center justify-center rounded bg-primary text-white font-bold">1</span>
+                    <span>Snap &amp; Describe</span>
+                  </div>
+                  <span className="rounded bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-muted">Step 1</span>
                 </div>
-                <h3 className="text-base font-semibold text-ink">Report</h3>
-                <p className="text-xs leading-relaxed text-muted">
-                  Citizens submit issue descriptions with photos and an exact map pin in under 60 seconds.
-                </p>
+
+                <div className="flex flex-col gap-3 rounded-lg border border-border bg-canvas p-4 text-xs">
+                  <div className="flex items-center gap-2 text-muted">
+                    <Camera className="h-4 w-4 text-primary" />
+                    <span className="font-medium text-ink">Photo attached</span>
+                    <span className="ml-auto font-mono text-[10px] text-muted">pothole-img.jpg</span>
+                  </div>
+                  <p className="rounded bg-surface p-2 text-ink italic border border-border/60">
+                    &quot;Caved-in manhole cover on 100ft road near service entrance...&quot;
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    <span className="rounded bg-surface-muted border border-border px-2 py-0.5 text-[11px] font-semibold text-ink">Category: Drainage</span>
+                    <span className="rounded bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-900">PII Redacted</span>
+                    <span className="rounded bg-warning-bg px-2 py-0.5 text-[11px] font-semibold text-warning">Hazard: Injury</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-base font-semibold text-ink">AI Assistant Triaging</h3>
+                  <p className="text-xs text-muted leading-relaxed">
+                    Upload photos and issue details. Server-side Gemini strips personal data and predicts initial category and severity.
+                  </p>
+                </div>
               </div>
 
-              {/* Step 2 */}
-              <div className="flex flex-col gap-3 rounded-md border border-border bg-surface p-6 shadow-xs">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-subtle text-primary font-bold">
-                  2
+              {/* Step 2 Mockup */}
+              <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-xs">
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <div className="flex items-center gap-2 font-mono text-xs font-bold text-ink">
+                    <span className="flex h-6 w-6 items-center justify-center rounded bg-primary text-white font-bold">2</span>
+                    <span>Pin on Interactive Map</span>
+                  </div>
+                  <span className="rounded bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-muted">Step 2</span>
                 </div>
-                <h3 className="text-base font-semibold text-ink">Understand</h3>
-                <p className="text-xs leading-relaxed text-muted">
-                  Server-side Gemini AI extracts categories, detects potential safety hazards, and strips PII.
-                </p>
+
+                <div className="flex flex-col gap-2 rounded-lg border border-border bg-canvas p-4 text-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-semibold text-ink">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      <span>MapLibre Draggable Pin</span>
+                    </div>
+                    <span className="rounded bg-emerald-100 text-emerald-800 px-1.5 py-0.5 text-[10px] font-mono">±15m GPS</span>
+                  </div>
+                  <div className="h-20 w-full rounded border border-border bg-gradient-to-br from-teal-50 to-emerald-100/40 flex items-center justify-center text-center p-2">
+                    <span className="rounded bg-surface px-2.5 py-1 text-[11px] font-mono text-ink font-bold shadow-xs border border-border">
+                      Ward 150 · Bellandur Pilot Polygon
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 text-[11px] text-muted">
+                    <span>Point-in-polygon verified</span>
+                    <span className="font-mono text-ink">12.9352° N, 77.6245° E</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-base font-semibold text-ink">Ward Spatial Boundary</h3>
+                  <p className="text-xs text-muted leading-relaxed">
+                    Precision geolocation verifies your issue is within municipal boundaries and routes directly to the ward engineer.
+                  </p>
+                </div>
               </div>
 
-              {/* Step 3 */}
-              <div className="flex flex-col gap-3 rounded-md border border-border bg-surface p-6 shadow-xs">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-subtle text-primary font-bold">
-                  3
+              {/* Step 3 Mockup */}
+              <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-xs">
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <div className="flex items-center gap-2 font-mono text-xs font-bold text-ink">
+                    <span className="flex h-6 w-6 items-center justify-center rounded bg-primary text-white font-bold">3</span>
+                    <span>Receive Priority Receipt</span>
+                  </div>
+                  <span className="rounded bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-muted">Step 3</span>
                 </div>
-                <h3 className="text-base font-semibold text-ink">Prioritise</h3>
-                <p className="text-xs leading-relaxed text-muted">
-                  Deterministic 7-factor engine computes a transparent 0–100 score and issues a Priority Receipt.
-                </p>
-              </div>
 
-              {/* Step 4 */}
-              <div className="flex flex-col gap-3 rounded-md border border-border bg-surface p-6 shadow-xs">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-subtle text-primary font-bold">
-                  4
+                <div className="flex flex-col gap-2 rounded-lg border border-dashed border-border bg-canvas p-4 text-xs">
+                  <div className="flex items-center justify-between border-b border-dashed border-border pb-2 font-mono font-bold text-ink">
+                    <span>RECEIPT #CP-BLR-00124</span>
+                    <span className="text-primary">70 / 100</span>
+                  </div>
+                  <div className="flex justify-between text-[11px] py-0.5 text-muted">
+                    <span>Severity (Base 4/5)</span>
+                    <span className="font-mono text-ink font-semibold">+18.8</span>
+                  </div>
+                  <div className="flex justify-between text-[11px] py-0.5 text-muted">
+                    <span>Safety Hazard (Injury)</span>
+                    <span className="font-mono text-ink font-semibold">+20.0</span>
+                  </div>
+                  <div className="flex justify-between text-[11px] py-0.5 text-muted">
+                    <span>SLA Waiting Duration</span>
+                    <span className="font-mono text-ink font-semibold">+12.4</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between border-t border-dashed border-border pt-1 font-semibold text-ink">
+                    <span>Triage Band</span>
+                    <span className="rounded bg-red-100 text-red-800 px-2 py-0.5 font-mono text-[10px]">CRITICAL</span>
+                  </div>
                 </div>
-                <h3 className="text-base font-semibold text-ink">Resolve</h3>
-                <p className="text-xs leading-relaxed text-muted">
-                  Authority teams take action on clear queues; citizens receive status updates until closure.
-                </p>
+
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-base font-semibold text-ink">Deterministic Ledger</h3>
+                  <p className="text-xs text-muted leading-relaxed">
+                    Your report receives an itemised 7-factor receipt. City teams and citizens see exactly how priority was calculated.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

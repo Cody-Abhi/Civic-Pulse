@@ -18,7 +18,7 @@ export function PublicFooter() {
               prototype engineered for transparent, auditable prioritization and zero-duplicate
               civic workflows.
             </p>
-            <p className="text-[11px] font-semibold text-warning">
+            <p className="text-[11px] font-semibold text-ink-secondary">
               Independent prototype · Not affiliated with BBMP, BDA or any government authority.
             </p>
           </div>

@@ -119,11 +119,11 @@ export default async function AdminDashboardPage() {
                         title={`Resolved: ${col.resolved}`}
                       />
                     </div>
-                    <span className="text-xs font-medium text-muted-foreground">{col.day}</span>
+                    <span className="text-xs font-semibold text-ink">{col.day}</span>
                   </div>
                 ))}
               </div>
-              <div className="flex items-center justify-center gap-6 border-t border-border pt-3 text-xs text-muted-foreground">
+              <div className="flex items-center justify-center gap-6 border-t border-border pt-3 text-xs text-ink-secondary">
                 <div className="flex items-center gap-2">
                   <span className="h-3 w-3 rounded-sm bg-primary/40" />
                   <span>Incoming complaints</span>
@@ -142,7 +142,7 @@ export default async function AdminDashboardPage() {
           <div className="rounded-xl border border-border bg-surface-card p-5 shadow-xs">
             <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
               <h2 className="text-base font-semibold text-foreground">System health</h2>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-900">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 Normal
               </span>
@@ -150,36 +150,36 @@ export default async function AdminDashboardPage() {
 
             <div className="space-y-4 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Firestore operations</span>
+                <span className="text-ink-secondary">Firestore operations</span>
                 <span className="font-mono text-xs font-semibold text-foreground">
                   3,420 r / 480 w
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Gemini model</span>
+                <span className="text-ink-secondary">Gemini model</span>
                 <span className="font-mono text-xs font-medium text-foreground">
                   gemini-2.5-flash
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">AI P95 latency</span>
+                <span className="text-ink-secondary">AI P95 latency</span>
                 <span className="font-mono text-xs font-medium text-foreground">
                   {aiMetrics.latencyP95Ms} ms
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Synthetic corpus</span>
-                <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
+                <span className="text-ink-secondary">Synthetic corpus</span>
+                <span className="inline-flex items-center gap-1 rounded border border-border bg-surface px-2 py-0.5 text-xs font-semibold text-ink">
                   {complaints.length} records
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">AI safety switch</span>
+                <span className="text-ink-secondary">AI safety switch</span>
                 <span
-                  className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${
+                  className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-semibold ${
                     aiMetrics.paused
-                      ? "bg-amber-100 text-amber-800"
-                      : "bg-emerald-100 text-emerald-800"
+                      ? "bg-amber-100 text-amber-900"
+                      : "bg-emerald-100 text-emerald-900"
                   }`}
                 >
                   {aiMetrics.paused ? "Paused" : "Active"}
@@ -188,8 +188,8 @@ export default async function AdminDashboardPage() {
             </div>
 
             <div className="mt-6 border-t border-border pt-4">
-              <Link href="/admin/ai-monitoring" className="text-xs font-medium text-primary hover:underline">
-                View AI telemetry & logs &rarr;
+              <Link href="/admin/ai-monitoring" className="text-xs font-semibold text-teal-800 hover:text-primary hover:underline">
+                View AI telemetry &amp; logs &rarr;
               </Link>
             </div>
           </div>

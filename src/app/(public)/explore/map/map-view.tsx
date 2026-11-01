@@ -47,6 +47,7 @@ export function MapView({ complaints }: MapViewProps) {
     complaints[0] || null,
   );
   const [categoryFilter, setCategoryFilter] = React.useState("ALL");
+  const [layerMode, setLayerMode] = React.useState<"clusters" | "heatmap">("clusters");
   const [mapError, setMapError] = React.useState(false);
   const [isLoaded, setIsLoaded] = React.useState(false);
 
@@ -125,6 +126,60 @@ export function MapView({ complaints }: MapViewProps) {
             cluster: true,
             clusterMaxZoom: 14,
             clusterRadius: 50,
+          });
+
+          // Unclustered heatmap source
+          map.addSource("complaints-heat-source", {
+            type: "geojson",
+            data: {
+              type: "FeatureCollection",
+              features: geojsonFeatures,
+            },
+          });
+
+          // Heatmap Layer (§UI-06)
+          map.addLayer({
+            id: "heatmap-layer",
+            type: "heatmap",
+            source: "complaints-heat-source",
+            maxzoom: 16,
+            paint: {
+              "heatmap-weight": [
+                "interpolate",
+                ["linear"],
+                ["get", "score"],
+                0, 0,
+                100, 1,
+              ],
+              "heatmap-intensity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                0, 1,
+                15, 3,
+              ],
+              "heatmap-color": [
+                "interpolate",
+                ["linear"],
+                ["heatmap-density"],
+                0, "rgba(15, 118, 110, 0)",
+                0.2, "rgb(45, 212, 191)",
+                0.4, "rgb(250, 204, 21)",
+                0.6, "rgb(249, 115, 22)",
+                1, "rgb(220, 38, 38)",
+              ],
+              "heatmap-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                0, 3,
+                15, 24,
+              ],
+              "heatmap-opacity": 0.85,
+            },
+            layout: {
+              visibility: "none",
+            },
           });
 
           // Clusters Circle Layer
@@ -269,30 +324,58 @@ export function MapView({ complaints }: MapViewProps) {
     const map = mapInstanceRef.current;
     if (!map || !isLoaded) return;
 
+    const data = {
+      type: "FeatureCollection" as const,
+      features: filteredComplaints.map((c) => ({
+        type: "Feature" as const,
+        geometry: {
+          type: "Point" as const,
+          coordinates: [c.location.lng, c.location.lat] as [number, number],
+        },
+        properties: {
+          id: c.id,
+          ref: c.ref,
+          title: c.title,
+          category: c.category,
+          band: c.priority.band,
+          score: c.priority.score,
+          status: c.status,
+          wardName: c.location.wardName || "Bengaluru",
+        },
+      })),
+    };
+
     const source = map.getSource("complaints-source") as GeoJSONSource | undefined;
     if (source) {
-      source.setData({
-        type: "FeatureCollection",
-        features: filteredComplaints.map((c) => ({
-          type: "Feature",
-          geometry: {
-            type: "Point",
-            coordinates: [c.location.lng, c.location.lat],
-          },
-          properties: {
-            id: c.id,
-            ref: c.ref,
-            title: c.title,
-            category: c.category,
-            band: c.priority.band,
-            score: c.priority.score,
-            status: c.status,
-            wardName: c.location.wardName || "Bengaluru",
-          },
-        })),
-      });
+      source.setData(data);
+    }
+    const heatSource = map.getSource("complaints-heat-source") as GeoJSONSource | undefined;
+    if (heatSource) {
+      heatSource.setData(data);
     }
   }, [filteredComplaints, isLoaded]);
+
+  // Toggle between clusters and heatmap layers (§UI-06)
+  React.useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !isLoaded) return;
+
+    try {
+      if (layerMode === "heatmap") {
+        if (map.getLayer("heatmap-layer")) map.setLayoutProperty("heatmap-layer", "visibility", "visible");
+        if (map.getLayer("clusters")) map.setLayoutProperty("clusters", "visibility", "none");
+        if (map.getLayer("cluster-count")) map.setLayoutProperty("cluster-count", "visibility", "none");
+        if (map.getLayer("unclustered-point")) map.setLayoutProperty("unclustered-point", "visibility", "none");
+      } else {
+        if (map.getLayer("heatmap-layer")) map.setLayoutProperty("heatmap-layer", "visibility", "none");
+        if (map.getLayer("clusters")) map.setLayoutProperty("clusters", "visibility", "visible");
+        if (map.getLayer("cluster-count")) map.setLayoutProperty("cluster-count", "visibility", "visible");
+        if (map.getLayer("unclustered-point")) map.setLayoutProperty("unclustered-point", "visibility", "visible");
+      }
+    } catch {
+      // Ignore layout updates if layer is not ready
+    }
+  }, [layerMode, isLoaded]);
 
   // Pan to selected complaint
   const handleSelectComplaint = (c: Complaint) => {
@@ -323,22 +406,53 @@ export function MapView({ complaints }: MapViewProps) {
           <DemoBadge />
         </div>
 
-        {/* Category Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto py-1">
-          {CATEGORIES.map((cat) => (
+        {/* Controls: Heatmap toggle & Category Filter Pills */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Layer Mode Toggle (§UI-06) */}
+          <div className="flex items-center rounded-lg border border-border bg-canvas p-0.5 text-xs">
             <button
-              key={cat}
               type="button"
-              onClick={() => setCategoryFilter(cat)}
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
-                categoryFilter === cat
+              onClick={() => setLayerMode("clusters")}
+              className={`rounded-md px-2.5 py-1 font-semibold transition-colors ${
+                layerMode === "clusters"
                   ? "bg-primary text-white shadow-xs"
-                  : "bg-surface-subtle text-ink-secondary hover:bg-border"
+                  : "text-muted hover:text-ink"
               }`}
             >
-              {cat === "ALL" ? "All" : cat}
+              Clusters
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => setLayerMode("heatmap")}
+              className={`rounded-md px-2.5 py-1 font-semibold transition-colors ${
+                layerMode === "heatmap"
+                  ? "bg-primary text-white shadow-xs"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              Heatmap
+            </button>
+          </div>
+
+          <div className="h-4 w-px bg-border hidden sm:block" />
+
+          {/* Category Filter Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto py-1">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategoryFilter(cat)}
+                className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
+                  categoryFilter === cat
+                    ? "bg-primary text-white shadow-xs"
+                    : "bg-surface-subtle text-ink-secondary hover:bg-border"
+                }`}
+              >
+                {cat === "ALL" ? "All" : cat}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
