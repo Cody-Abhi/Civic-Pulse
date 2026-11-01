@@ -45,7 +45,7 @@ type UpdateStatusBody = z.infer<typeof updateStatusSchema>;
 
 export const PATCH = withApi<UpdateStatusBody, { id: string }>(
   {
-    roles: ["authority", "admin"],
+    roles: ["citizen", "authority", "admin"],
     schema: updateStatusSchema,
   },
   async (_req, { user, body, params }) => {
@@ -62,6 +62,11 @@ export const PATCH = withApi<UpdateStatusBody, { id: string }>(
     // PRD §21.2: 404 for out-of-scope resources (authority in different department)
     if (user.role === "authority" && user.departmentId !== complaint.departmentId) {
       throw new ApiError(404, "NOT_FOUND", "Complaint not found.");
+    }
+
+    // Citizen can only modify their own reports
+    if (user.role === "citizen" && complaint.reporterUid !== user.uid) {
+      throw new ApiError(403, "FORBIDDEN", "You can only update your own complaints.");
     }
 
     // Lifecycle state machine validation (§21.5)
@@ -88,6 +93,7 @@ export const PATCH = withApi<UpdateStatusBody, { id: string }>(
         reason: body.rejectReason,
         note: body.note,
         resolutionNote: body.resolutionNote,
+        reopenReason: body.note,
         targetDepartmentId: body.targetDepartmentId,
         assignedToUid: body.assignedToUid,
         duplicateOfId: body.duplicateOfId,

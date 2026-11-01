@@ -19,7 +19,7 @@ import { DemoBadge } from "@/components/ui/demo-badge";
 import { PriorityReceipt } from "@/components/ai/priority-receipt";
 import { AIAnalysisCard } from "@/components/ai/ai-analysis-card";
 import { Button } from "@/components/ui/button";
-import type { Complaint, ComplaintStatus, Severity } from "@/domain/types";
+import type { Complaint, ComplaintStatus } from "@/domain/types";
 
 export interface ComplaintDetailClientProps {
   complaint: Complaint;
@@ -66,42 +66,101 @@ export function ComplaintDetailClient({ complaint: initialComplaint }: Complaint
 
   const currentIndex = getStepIndex(complaint.status);
 
-  // Handle feedback confirmation
+  // Handle feedback confirmation (T8)
   const handleConfirmFix = async () => {
     setActionLoading(true);
     try {
-      // Optimistic update
-      setComplaint((prev) => ({
-        ...prev,
+      const res = await fetch(`/api/complaints/${complaint.id}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating, comment: comment.trim() || undefined }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || "Failed to submit resolution feedback.");
+      }
+      const data = await res.json();
+      setComplaint(data.complaint || {
+        ...complaint,
         status: "CLOSED",
         feedback: {
-          rating: rating as Severity,
+          rating: rating as 1 | 2 | 3 | 4 | 5,
           comment,
           at: new Date().toISOString(),
         },
-      }));
+      });
       setShowFeedbackModal(false);
       setToastMessage("Thanks! Your report has been verified and closed.");
       setTimeout(() => setToastMessage(null), 4000);
+    } catch (err: unknown) {
+      setToastMessage(err instanceof Error ? err.message : "Failed to submit feedback");
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Handle reopen
+  // Handle reopen (T9)
   const handleReopen = async () => {
     if (reopenReason.trim().length < 10) return;
     setActionLoading(true);
     try {
-      // Optimistic update
-      setComplaint((prev) => ({
-        ...prev,
+      const res = await fetch(`/api/complaints/${complaint.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "REOPENED",
+          expectedStatus: "RESOLVED",
+          note: reopenReason.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || "Failed to reopen complaint.");
+      }
+      const data = await res.json();
+      setComplaint(data.complaint || {
+        ...complaint,
         status: "REOPENED",
-        reopenCount: (prev.reopenCount || 0) + 1,
-      }));
+        reopenCount: (complaint.reopenCount || 0) + 1,
+      });
       setShowReopenModal(false);
       setToastMessage("Report reopened. The municipal department has been alerted.");
       setTimeout(() => setToastMessage(null), 4000);
+    } catch (err: unknown) {
+      setToastMessage(err instanceof Error ? err.message : "Failed to reopen complaint");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handle withdraw (T2)
+  const handleWithdraw = async () => {
+    if (!confirm("Are you sure you want to withdraw this report? This cannot be undone.")) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/complaints/${complaint.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "REJECTED",
+          expectedStatus: complaint.status,
+          rejectReason: "WITHDRAWN_BY_REPORTER",
+          note: "Withdrawn by citizen reporter",
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || "Failed to withdraw complaint.");
+      }
+      const data = await res.json();
+      setComplaint(data.complaint || {
+        ...complaint,
+        status: "REJECTED",
+      });
+      setToastMessage("Report has been withdrawn.");
+      setTimeout(() => setToastMessage(null), 4000);
+    } catch (err: unknown) {
+      setToastMessage(err instanceof Error ? err.message : "Failed to withdraw report");
     } finally {
       setActionLoading(false);
     }
@@ -252,6 +311,24 @@ export function ComplaintDetailClient({ complaint: initialComplaint }: Complaint
                   <span>It&apos;s not fixed</span>
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* Contextual Action Bar when SUBMITTED or UNDER_REVIEW (T2 Withdraw) */}
+          {(complaint.status === "SUBMITTED" || complaint.status === "UNDER_REVIEW") && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-surface p-4 text-xs">
+              <span className="text-muted">
+                Need to cancel this report? You can withdraw it before department work begins.
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleWithdraw}
+                disabled={actionLoading}
+                className="text-danger hover:bg-danger/10 hover:border-danger/30"
+              >
+                Withdraw report
+              </Button>
             </div>
           )}
 

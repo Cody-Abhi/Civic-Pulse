@@ -2,78 +2,75 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Check, Bell, CheckCircle2, MessageSquare, RotateCcw } from "lucide-react";
+import { Check, Bell, CheckCircle2, MessageSquare, RotateCcw, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/feedback/empty-state";
+import type { Notification } from "@/domain/types";
 
-interface NotificationItem {
-  id: string;
-  type: "RESOLVED" | "SUPPORT_ADDED" | "STATUS_CHANGED" | "REOPENED";
-  title: string;
-  body: string;
-  time: string;
-  link: string;
-  read: boolean;
-  group: "Today" | "Yesterday" | "Earlier";
+function getNotificationGroup(createdAtIso: string): "Today" | "Yesterday" | "Earlier" {
+  const date = new Date(createdAtIso);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  return "Earlier";
 }
 
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: "notif-1",
-    type: "RESOLVED",
-    title: "Complaint marked resolved",
-    body: "Roads Department marked CP-BLR-2611-000007 as resolved. Please verify on ground.",
-    time: "2 hours ago",
-    link: "/citizen/complaints/synthetic-000007",
-    read: false,
-    group: "Today",
-  },
-  {
-    id: "notif-2",
-    type: "SUPPORT_ADDED",
-    title: "3 neighbors added their voice",
-    body: "Citizens in Bellandur supported your streetlight report CP-BLR-2611-000014.",
-    time: "4 hours ago",
-    link: "/citizen/complaints/synthetic-000014",
-    read: false,
-    group: "Today",
-  },
-  {
-    id: "notif-3",
-    type: "STATUS_CHANGED",
-    title: "Investigation underway",
-    body: "BBMP Solid Waste management assigned an inspection crew to CP-BLR-2611-000021.",
-    time: "Yesterday",
-    link: "/citizen/complaints/synthetic-000021",
-    read: true,
-    group: "Yesterday",
-  },
-  {
-    id: "notif-4",
-    type: "SUPPORT_ADDED",
-    title: "Neighbor added their voice",
-    body: "Citizen 4 supported your drainage overflow report CP-BLR-2611-000028.",
-    time: "3 days ago",
-    link: "/citizen/complaints/synthetic-000028",
-    read: true,
-    group: "Earlier",
-  },
-];
+function formatRelativeTime(createdAtIso: string): string {
+  const date = new Date(createdAtIso);
+  const now = new Date();
+  const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  if (diffSeconds < 60) return "Just now";
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return "Yesterday";
+  return `${diffDays}d ago`;
+}
 
 export default function CitizenNotificationsPage() {
-  const [items, setItems] = React.useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [items, setItems] = React.useState<Notification[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [filter, setFilter] = React.useState<"ALL" | "UNREAD">("ALL");
+
+  React.useEffect(() => {
+    let isMounted = true;
+    const load = () => {
+      fetch("/api/notifications")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (isMounted && d?.notifications) {
+            setItems(d.notifications);
+            setLoading(false);
+          }
+        })
+        .catch(() => {
+          if (isMounted) setLoading(false);
+        });
+    };
+
+    load();
+    const interval = setInterval(load, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const unreadCount = items.filter((i) => !i.read).length;
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
     setItems((prev) => prev.map((item) => ({ ...item, read: true })));
+    await fetch("/api/notifications/read-all", { method: "POST" }).catch(() => {});
   };
 
-  const markSingleAsRead = (id: string) => {
+  const markSingleAsRead = async (id: string) => {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));
+    await fetch(`/api/notifications/${id}/read`, { method: "POST" }).catch(() => {});
   };
 
   const filteredItems = items.filter((item) => {
@@ -94,7 +91,7 @@ export default function CitizenNotificationsPage() {
             variant="outline"
             size="sm"
             onClick={markAllAsRead}
-            disabled={unreadCount === 0}
+            disabled={unreadCount === 0 || loading}
             className="gap-1.5"
           >
             <Check className="h-4 w-4" aria-hidden="true" />
@@ -129,7 +126,12 @@ export default function CitizenNotificationsPage() {
         </button>
       </div>
 
-      {filteredItems.length === 0 ? (
+      {loading && items.length === 0 ? (
+        <div className="flex h-48 items-center justify-center rounded-md border border-border bg-surface text-muted text-sm gap-2">
+          <Loader2 size={18} className="animate-spin text-primary" />
+          <span>Loading notifications...</span>
+        </div>
+      ) : filteredItems.length === 0 ? (
         <div className="rounded-md border border-border bg-surface p-12">
           <EmptyState
             title="You're all caught up"
@@ -139,7 +141,7 @@ export default function CitizenNotificationsPage() {
       ) : (
         <div className="flex flex-col gap-6">
           {groups.map((group) => {
-            const groupItems = filteredItems.filter((i) => i.group === group);
+            const groupItems = filteredItems.filter((i) => getNotificationGroup(i.createdAt) === group);
             if (groupItems.length === 0) return null;
 
             return (
@@ -189,7 +191,7 @@ export default function CitizenNotificationsPage() {
                           >
                             {item.title}
                           </h3>
-                          <span className="text-xs text-muted">{item.time}</span>
+                          <span className="text-xs text-muted">{formatRelativeTime(item.createdAt)}</span>
                         </div>
                         <p className="text-xs text-ink-muted leading-relaxed">{item.body}</p>
                       </div>

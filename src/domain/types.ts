@@ -143,7 +143,7 @@ export interface Resolution {
 }
 export interface Feedback {
   rating: Severity;
-  comment?: string;
+  comment?: string | undefined;
   at: string;
 }
 
@@ -280,5 +280,30 @@ export interface SystemSettings {
     complaintsPerUserPerDay: number;
     supportsPerUserPerDay: number;
   };
+}
+
+export type NotificationType =
+  | "STATUS_CHANGED"
+  | "ASSIGNED"
+  | "RESOLVED"
+  | "REOPENED"
+  | "FEEDBACK_RECEIVED"
+  | "SUPPORT_ADDED"
+  | "DUPLICATE_LINKED"
+  | "NEW_IN_QUEUE"
+  | "SLA_BREACH"
+  | "ROLE_CHANGED"
+  | "SYSTEM";
+
+export interface Notification {
+  id: string;
+  userId: string;
+  complaintId?: string | null;
+  type: NotificationType;
+  title: string;
+  body: string;
+  link: string;
+  read: boolean;
+  createdAt: string;
 }
 

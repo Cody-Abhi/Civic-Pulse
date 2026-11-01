@@ -12,6 +12,7 @@ import type {
   Role,
   Severity,
   PriorityResult,
+  NotificationType,
 } from "@/domain/types";
 import {
   categorySchema,
@@ -284,8 +285,13 @@ export async function createComplaint(
     if (counterSnap.exists) {
       seq = (counterSnap.data()?.value || 0) + 1;
     }
-    tx.set(counterDocRef, { value: seq }, { merge: true });
     const ref = `CP-BLR-${yy}${mm}-${String(seq).padStart(6, "0")}`;
+
+    // Read map snapshot before any writes if public
+    const mapSnapRef = firestore.collection("mapSnapshots").doc("current");
+    const mapSnap = validated.visibility === "public" ? await tx.get(mapSnapRef) : null;
+
+    tx.set(counterDocRef, { value: seq }, { merge: true });
 
     // C. User quota / stats increment
     const userDocRef = firestore.collection("users").doc(user.uid);
@@ -423,9 +429,7 @@ export async function createComplaint(
     );
 
     // H. Map Snapshot point upsert
-    if (complaint.visibility === "public") {
-      const mapSnapRef = firestore.collection("mapSnapshots").doc("current");
-      const mapSnap = await tx.get(mapSnapSnapRef(mapSnapRef));
+    if (complaint.visibility === "public" && mapSnap) {
       const currentPoints = (mapSnap.exists ? mapSnap.data()?.points : []) as MapSnapshotPoint[];
 
       const newPoint: MapSnapshotPoint = {
@@ -472,9 +476,6 @@ export async function createComplaint(
   return { complaint: createdComplaint, publicUrl };
 }
 
-function mapSnapSnapRef(ref: FirebaseFirestore.DocumentReference) {
-  return ref;
-}
 
 export async function transitionComplaint(
   id: string,
@@ -483,6 +484,9 @@ export async function transitionComplaint(
     expectedStatus: ComplaintStatus;
     note?: string | undefined;
     resolutionNote?: string | undefined;
+    reopenReason?: string | undefined;
+    feedbackRating?: number | undefined;
+    feedbackComment?: string | undefined;
     departmentId?: string | undefined;
     assignedToUid?: string | null | undefined;
     rejectReason?: RejectReason | undefined;
@@ -499,6 +503,9 @@ export async function transitionComplaint(
     if (!snap.exists) {
       throw new Error("NOT_FOUND");
     }
+
+    const mapSnapRef = firestore.collection("mapSnapshots").doc("current");
+    const mapSnap = await tx.get(mapSnapRef);
 
     const complaint = snap.data() as Complaint;
 
@@ -532,6 +539,8 @@ export async function transitionComplaint(
         reason: options.rejectReason,
         note: options.note,
         resolutionNote: options.resolutionNote,
+        reopenReason: options.reopenReason || options.note,
+        feedbackRating: options.feedbackRating,
         targetDepartmentId: options.departmentId,
         assignedToUid: options.assignedToUid || undefined,
       },
@@ -566,6 +575,14 @@ export async function transitionComplaint(
       };
     }
 
+    if (options.to === "CLOSED" && options.feedbackRating) {
+      complaint.feedback = {
+        rating: options.feedbackRating as 1 | 2 | 3 | 4 | 5,
+        comment: options.feedbackComment || options.note || undefined,
+        at: nowIso,
+      };
+    }
+
     if (options.to === "REOPENED") {
       complaint.reopenCount = (complaint.reopenCount || 0) + 1;
     }
@@ -575,8 +592,9 @@ export async function transitionComplaint(
       statusChangedAt: complaint.statusChangedAt,
       departmentId: complaint.departmentId,
       assignedToUid: complaint.assignedToUid,
-      resolution: complaint.resolution,
-      reopenCount: complaint.reopenCount,
+      resolution: complaint.resolution || null,
+      feedback: complaint.feedback || null,
+      reopenCount: complaint.reopenCount || 0,
       updatedAt: complaint.updatedAt,
     });
 
@@ -636,8 +654,6 @@ export async function transitionComplaint(
     }
 
     // Update mapSnapshot
-    const mapSnapRef = firestore.collection("mapSnapshots").doc("current");
-    const mapSnap = await tx.get(mapSnapRef);
     if (mapSnap.exists) {
       let points = (mapSnap.data()?.points || []) as MapSnapshotPoint[];
       if (options.to === "CLOSED" || options.to === "REJECTED") {
@@ -649,6 +665,54 @@ export async function transitionComplaint(
         }
       }
       tx.set(mapSnapRef, { points, count: points.length, updatedAt: nowIso }, { merge: true });
+    }
+
+    // In-app notifications (§32.1)
+    if (complaint.reporterUid && options.actorUid !== complaint.reporterUid) {
+      const notifId = `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      let notifTitle = `Status updated to ${options.to}`;
+      let notifBody = `${complaint.departmentName || "Department"} updated ${complaint.ref} to ${options.to}.`;
+      let notifType: NotificationType = "STATUS_CHANGED";
+
+      if (options.to === "RESOLVED") {
+        notifTitle = "Complaint marked resolved";
+        notifBody = `${complaint.departmentName || "Department"} marked ${complaint.ref} as resolved. Please verify on ground.`;
+        notifType = "RESOLVED";
+      } else if (options.to === "IN_PROGRESS") {
+        notifTitle = "Investigation & work underway";
+        notifBody = `${complaint.departmentName || "Department"} has assigned a crew and begun work on ${complaint.ref}.`;
+        notifType = "STATUS_CHANGED";
+      } else if (options.to === "CLOSED") {
+        notifTitle = "Complaint closed";
+        notifBody = `Report ${complaint.ref} has been closed. Thank you for your feedback!`;
+        notifType = "STATUS_CHANGED";
+      } else if (options.to === "REJECTED") {
+        notifTitle = "Report review update";
+        notifBody = `Report ${complaint.ref} was marked as rejected: ${options.rejectReason || "Not actionable"}.`;
+        notifType = "STATUS_CHANGED";
+      }
+
+      tx.set(firestore.collection("notifications").doc(notifId), {
+        id: notifId,
+        userId: complaint.reporterUid,
+        complaintId: complaint.id,
+        type: notifType,
+        title: notifTitle,
+        body: notifBody.slice(0, 160),
+        link: `/citizen/complaints/${complaint.id}`,
+        read: false,
+        createdAt: nowIso,
+      });
+
+      const reporterUserRef = firestore.collection("users").doc(complaint.reporterUid);
+      tx.set(
+        reporterUserRef,
+        {
+          unreadNotifications: FieldValue.increment(1),
+          updatedAt: nowIso,
+        },
+        { merge: true },
+      );
     }
 
     return complaint;
@@ -679,6 +743,9 @@ export async function supportComplaint(
     }
 
     const complaint = snap.data() as Complaint;
+
+    const mapSnapRef = firestore.collection("mapSnapshots").doc("current");
+    const mapSnap = await tx.get(mapSnapRef);
 
     if (complaint.reporterUid === user.uid) {
       throw new Error("Cannot support your own report");
@@ -775,8 +842,6 @@ export async function supportComplaint(
     );
 
     // Update mapSnapshot
-    const mapSnapRef = firestore.collection("mapSnapshots").doc("current");
-    const mapSnap = await tx.get(mapSnapRef);
     if (mapSnap.exists) {
       const points = (mapSnap.data()?.points || []) as MapSnapshotPoint[];
       const pt = points.find((p) => p.id === complaint.id);
@@ -786,6 +851,32 @@ export async function supportComplaint(
         pt.supporters = supporterCount;
       }
       tx.set(mapSnapRef, { points, updatedAt: nowIso }, { merge: true });
+    }
+
+    // In-app notification to reporter on new support (§32.1)
+    if (complaint.reporterUid && complaint.reporterUid !== user.uid) {
+      const notifId = `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      tx.set(firestore.collection("notifications").doc(notifId), {
+        id: notifId,
+        userId: complaint.reporterUid,
+        complaintId: complaint.id,
+        type: "SUPPORT_ADDED",
+        title: "Neighbor added their voice",
+        body: `${user.displayName || "A citizen"} added their voice to support ${complaint.ref}.`,
+        link: `/citizen/complaints/${complaint.id}`,
+        read: false,
+        createdAt: nowIso,
+      });
+
+      const reporterUserRef = firestore.collection("users").doc(complaint.reporterUid);
+      tx.set(
+        reporterUserRef,
+        {
+          unreadNotifications: FieldValue.increment(1),
+          updatedAt: nowIso,
+        },
+        { merge: true },
+      );
     }
 
     return {
