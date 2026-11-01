@@ -58,6 +58,9 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const sessionCookie = cookieStore.get(env.SESSION_COOKIE_NAME)?.value;
 
   if (!sessionCookie) {
+    if (env.DEMO_MODE) {
+      return DEMO_USERS["citizen@demo.civicpulse.invalid"] || null;
+    }
     return null;
   }
 

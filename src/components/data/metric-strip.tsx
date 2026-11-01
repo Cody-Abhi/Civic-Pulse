@@ -6,9 +6,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 export interface MetricStripItem {
   label: string;
   value: number | string | null;
-  unit?: MetricUnit;
-  delta?: { value: number | string; label?: string; isPositive?: boolean };
-  hint?: string;
+  unit?: MetricUnit | undefined;
+  delta?: { value: number | string; label?: string | undefined; isPositive?: boolean | undefined } | undefined;
+  hint?: string | undefined;
 }
 
 export interface MetricStripProps {

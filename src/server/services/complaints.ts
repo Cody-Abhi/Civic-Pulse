@@ -277,6 +277,7 @@ export async function createComplaint(
  * Retrieves complaint by ID or Reference Code
  */
 export async function getComplaint(refOrId: string): Promise<Complaint | null> {
+  ensureSeedLoaded();
   const fromMemory = MEMORY_COMPLAINTS.get(refOrId);
   if (fromMemory) return fromMemory;
 
