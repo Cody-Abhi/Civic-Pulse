@@ -68,6 +68,7 @@ export function WorkspaceClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: targetStatus,
+          expectedStatus: complaint.status,
           ...payload,
         }),
       });
@@ -276,7 +277,19 @@ export function WorkspaceClient({
                 </Button>
               )}
 
-              {(complaint.status === "SUBMITTED" || complaint.status === "UNDER_REVIEW") && (
+              {complaint.status === "UNDER_REVIEW" && (
+                <Button
+                  size="sm"
+                  onClick={() => handleStatusChange("ASSIGNED")}
+                  disabled={statusLoading}
+                  className="gap-1.5 text-xs font-semibold shadow-xs"
+                >
+                  <Icon icon={Building2} size={14} />
+                  <span>Assign to Field Crew</span>
+                </Button>
+              )}
+
+              {complaint.status === "ASSIGNED" && (
                 <Button
                   size="sm"
                   onClick={() => handleStatusChange("IN_PROGRESS")}

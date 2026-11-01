@@ -110,7 +110,7 @@ export function AuditLogsClient({ initialLogs }: AuditLogsClientProps) {
         <div className="overflow-x-auto focus:outline-none focus:ring-1 focus:ring-primary rounded-md" tabIndex={0} role="region" aria-label="Audit events register table">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-border text-xs font-medium text-muted-foreground">
+              <tr className="border-b border-border text-xs font-semibold text-ink">
                 <th className="w-8 pb-3"></th>
                 <th className="pb-3">Timestamp</th>
                 <th className="pb-3">Action</th>
@@ -129,12 +129,12 @@ export function AuditLogsClient({ initialLogs }: AuditLogsClientProps) {
                       className={`hover:bg-muted/40 ${hasDiff ? "cursor-pointer" : ""}`}
                       onClick={() => hasDiff && toggleExpand(log.id)}
                     >
-                      <td className="py-3 text-muted-foreground">
+                      <td className="py-3 text-ink-secondary">
                         {hasDiff && (
                           isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
                         )}
                       </td>
-                      <td className="py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                      <td className="py-3 font-mono text-xs text-ink-secondary whitespace-nowrap">
                         {new Date(log.createdAt).toLocaleString("en-IN", {
                           month: "short",
                           day: "numeric",
@@ -147,11 +147,11 @@ export function AuditLogsClient({ initialLogs }: AuditLogsClientProps) {
                         {log.action}
                       </td>
                       <td className="py-3 text-xs">
-                        <div className="font-medium text-foreground">{log.actorEmail}</div>
-                        <div className="text-[11px] uppercase text-muted-foreground">{log.actorRole}</div>
+                        <div className="font-semibold text-foreground">{log.actorEmail}</div>
+                        <div className="text-[11px] uppercase font-medium text-ink-secondary">{log.actorRole}</div>
                       </td>
-                      <td className="py-3 text-xs text-muted-foreground">
-                        <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">
+                      <td className="py-3 text-xs text-ink-secondary">
+                        <span className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-[11px] font-semibold text-ink">
                           {log.targetType}:{log.targetId}
                         </span>
                       </td>
