@@ -171,67 +171,69 @@ export function isInsideBengaluru(point: LatLng): boolean {
   );
 }
 
+import wardsGeoJson from "@/server/geo/wards.json";
+
 export interface WardBoundaryFeature {
   wardId: string;
   wardName: string;
+  wardNo?: string;
+  geometry?: {
+    type: "Polygon" | "MultiPolygon";
+    coordinates: any;
+  };
   coordinates: number[][][];
 }
 
-/** Default pilot ward polygon definitions for client & server detection */
-export const PILOT_WARD_BOUNDARIES: WardBoundaryFeature[] = [
-  {
-    wardId: "ward-150-bellandur",
-    wardName: "Bellandur",
-    coordinates: [[[77.655, 12.915], [77.695, 12.915], [77.705, 12.945], [77.665, 12.950], [77.655, 12.915]]],
-  },
-  {
-    wardId: "ward-080-indiranagar",
-    wardName: "Indiranagar",
-    coordinates: [[[77.625, 12.960], [77.655, 12.960], [77.655, 12.985], [77.625, 12.985], [77.625, 12.960]]],
-  },
-  {
-    wardId: "ward-151-koramangala",
-    wardName: "Koramangala",
-    coordinates: [[[77.610, 12.920], [77.640, 12.920], [77.645, 12.948], [77.610, 12.945], [77.610, 12.920]]],
-  },
-  {
-    wardId: "ward-085-whitefield",
-    wardName: "Whitefield",
-    coordinates: [[[77.725, 12.948], [77.775, 12.948], [77.780, 12.990], [77.725, 12.990], [77.725, 12.948]]],
-  },
-  {
-    wardId: "ward-174-hsr-layout",
-    wardName: "HSR Layout",
-    coordinates: [[[77.630, 12.898], [77.665, 12.898], [77.665, 12.925], [77.630, 12.925], [77.630, 12.898]]],
-  },
-  {
-    wardId: "ward-045-malleshwaram",
-    wardName: "Malleshwaram",
-    coordinates: [[[77.555, 12.985], [77.585, 12.985], [77.585, 13.015], [77.555, 13.015], [77.555, 12.985]]],
-  },
-  {
-    wardId: "ward-168-jayanagar",
-    wardName: "Jayanagar",
-    coordinates: [[[77.568, 12.915], [77.600, 12.915], [77.600, 12.945], [77.568, 12.945], [77.568, 12.915]]],
-  },
-  {
-    wardId: "ward-007-hebbal",
-    wardName: "Hebbal",
-    coordinates: [[[77.578, 13.020], [77.618, 13.020], [77.618, 13.055], [77.578, 13.055], [77.578, 13.020]]],
-  },
-];
+/** Real Bengaluru ward definitions from DataMeet Municipal_Spatial_Data (CC BY 4.0) */
+export const BENGALURU_WARDS: WardBoundaryFeature[] = (wardsGeoJson.features as any[]).map((f) => ({
+  wardId: f.properties.wardId,
+  wardName: f.properties.wardName,
+  wardNo: f.properties.wardNo,
+  geometry: f.geometry,
+  // Backwards compatibility for code expecting single outer ring polygon coordinates
+  coordinates: f.geometry.type === "Polygon" ? f.geometry.coordinates : f.geometry.coordinates[0],
+}));
+
+export const PILOT_WARD_BOUNDARIES: WardBoundaryFeature[] = BENGALURU_WARDS;
+
+export function findWardById(wardId: string): WardBoundaryFeature | null {
+  return BENGALURU_WARDS.find((w) => w.wardId === wardId) || null;
+}
+
+export function getAllWards(): { wardId: string; wardName: string; wardNo: string }[] {
+  return BENGALURU_WARDS.map((w) => ({
+    wardId: w.wardId,
+    wardName: w.wardName,
+    wardNo: w.wardNo || "",
+  }));
+}
 
 /**
  * Finds the corresponding BBMP ward for a given point using point-in-polygon.
+ * Checks both Polygon and MultiPolygon geometries from DataMeet spatial boundaries.
  * Returns null if outside the mapped wards.
  */
 export function findWardByPoint(
   point: LatLng,
-  wards: WardBoundaryFeature[] = PILOT_WARD_BOUNDARIES,
+  wards: WardBoundaryFeature[] = BENGALURU_WARDS,
 ): { wardId: string; wardName: string } | null {
   for (const ward of wards) {
-    if (pointInPolygon(point, ward.coordinates as unknown as ReadonlyArray<ReadonlyArray<readonly [number, number]>>)) {
-      return { wardId: ward.wardId, wardName: ward.wardName };
+    if (ward.geometry) {
+      if (ward.geometry.type === "Polygon") {
+        if (pointInPolygon(point, ward.geometry.coordinates)) {
+          return { wardId: ward.wardId, wardName: ward.wardName };
+        }
+      } else if (ward.geometry.type === "MultiPolygon") {
+        for (const poly of ward.geometry.coordinates) {
+          if (pointInPolygon(point, poly)) {
+            return { wardId: ward.wardId, wardName: ward.wardName };
+          }
+        }
+      }
+    } else if (ward.coordinates) {
+      if (pointInPolygon(point, ward.coordinates as unknown as ReadonlyArray<ReadonlyArray<readonly [number, number]>>)) {
+        return { wardId: ward.wardId, wardName: ward.wardName };
+      }
     }
   }
   return null;

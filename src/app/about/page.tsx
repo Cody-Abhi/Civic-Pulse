@@ -294,7 +294,7 @@ export default function AboutPage() {
         </p>
         <div className="flex flex-col gap-3 my-4">
           <div className="rounded-md border border-border bg-surface p-3.5 text-xs">
-            <span className="font-semibold text-ink">Bengaluru Ward Boundaries</span> — Open DataMeet Bengaluru Wards GeoJSON (Licensed under Creative Commons Attribution 4.0 International).
+            <span className="font-semibold text-ink">Bengaluru Ward Boundaries</span> — DataMeet Municipal_Spatial_Data (CC BY 4.0 International). 198 BBMP ward boundary polygons simplified to &le;600 KB for high-efficiency spatial point-in-polygon resolution.
           </div>
           <div className="rounded-md border border-border bg-surface p-3.5 text-xs">
             <span className="font-semibold text-ink">Basemap Tiles &amp; Vector Data</span> — OpenFreeMap vector basemaps powered by OpenStreetMap contributors (ODbL).

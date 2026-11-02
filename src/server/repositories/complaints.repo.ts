@@ -31,7 +31,7 @@ import {
   DEFAULT_WEIGHTS_VERSION,
 } from "@/domain/categories";
 import { validateTransition } from "@/domain/transitions";
-import { isInsideBengaluru, findWardByPoint, geohashEncode } from "@/domain/geo";
+import { isInsideBengaluru, findWardByPoint, findWardById, geohashEncode } from "@/domain/geo";
 import type { SessionUser } from "@/server/auth/session";
 
 export const createComplaintSchema = z.object({
@@ -363,8 +363,8 @@ export async function createComplaint(
   }
 
   const detectedWard = findWardByPoint(validated.location);
-  const wardId = validated.location.wardId || detectedWard?.wardId || "ward-150-bellandur";
-  const wardName = detectedWard?.wardName || "Bellandur";
+  const wardId = validated.location.wardId || detectedWard?.wardId || null;
+  const wardName = detectedWard?.wardName || (wardId ? findWardById(wardId)?.wardName ?? null : null);
 
   const geohash = geohashEncode(validated.location.lat, validated.location.lng, 9);
   const geohash5 = geohashEncode(validated.location.lat, validated.location.lng, 5);
@@ -512,19 +512,19 @@ export async function createComplaint(
 
     // G. Metrics updates
     const totalsRef = firestore.collection("cityMetrics").doc("totals");
-    tx.set(
-      totalsRef,
-      {
-        totalComplaints: FieldValue.increment(1),
-        open: FieldValue.increment(1),
-        submittedComplaints: FieldValue.increment(1),
-        [`openByCategory.${complaint.category}`]: FieldValue.increment(1),
-        [`openByDepartment.${complaint.departmentId}`]: FieldValue.increment(1),
-        [`openByBand.${complaint.priority.band}`]: FieldValue.increment(1),
-        updatedAt: nowIso,
-      },
-      { merge: true },
-    );
+    const totalsUpdate: Record<string, unknown> = {
+      totalComplaints: FieldValue.increment(1),
+      open: FieldValue.increment(1),
+      submittedComplaints: FieldValue.increment(1),
+      [`openByCategory.${complaint.category}`]: FieldValue.increment(1),
+      [`openByDepartment.${complaint.departmentId}`]: FieldValue.increment(1),
+      [`openByBand.${complaint.priority.band}`]: FieldValue.increment(1),
+      updatedAt: nowIso,
+    };
+    if (wardId) {
+      totalsUpdate[`openByWard.${wardId}`] = FieldValue.increment(1);
+    }
+    tx.set(totalsRef, totalsUpdate, { merge: true });
 
     const deptMetricsRef = firestore.collection("departmentMetrics").doc(complaint.departmentId);
     tx.set(

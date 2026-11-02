@@ -73,7 +73,7 @@ interface FormState {
   durationBucket: DurationBucket;
   affectedScale: AffectedScale;
   hazardFlags: HazardFlag[];
-  wardId: string;
+  wardId: string | null;
   landmark: string;
   lat: number;
   lng: number;
@@ -627,31 +627,39 @@ export default function ReportWizardPage() {
         <div className="flex flex-col gap-6">
           <LocationPicker
             value={{ lat: form.lat, lng: form.lng }}
+            selectedWardId={form.wardId}
             onChange={(nextPt, wardId) => {
               setForm((prev) => ({
                 ...prev,
                 lat: nextPt.lat,
                 lng: nextPt.lng,
-                ...(wardId ? { wardId } : {}),
+                wardId: wardId ?? null,
               }));
             }}
             landmark={form.landmark}
             onLandmarkChange={(landmark) => setForm((prev) => ({ ...prev, landmark }))}
           />
 
-          <div className="flex justify-between pt-4">
+          <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
             <Button variant="outline" onClick={() => setStep(2)} className="gap-2">
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               <span>Back</span>
             </Button>
-            <Button
-              onClick={() => setStep(4)}
-              disabled={!isInsideBengaluru({ lat: form.lat, lng: form.lng })}
-              className="gap-2"
-            >
-              <span>Next: Photos</span>
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Button>
+            <div className="flex items-center gap-3">
+              {!form.wardId && isInsideBengaluru({ lat: form.lat, lng: form.lng }) && (
+                <span className="text-xs text-amber-600 font-medium">
+                  Please pick your BBMP ward above to proceed.
+                </span>
+              )}
+              <Button
+                onClick={() => setStep(4)}
+                disabled={!isInsideBengaluru({ lat: form.lat, lng: form.lng }) || !form.wardId}
+                className="gap-2"
+              >
+                <span>Next: Photos</span>
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </div>
           </div>
         </div>
       )}

@@ -3,13 +3,14 @@
 import * as React from "react";
 import { MapPin, Navigation, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { isInsideBengaluru, findWardByPoint, type LatLng } from "@/domain/geo";
+import { isInsideBengaluru, findWardByPoint, findWardById, getAllWards, type LatLng } from "@/domain/geo";
 import type { Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 export interface LocationPickerProps {
   value: LatLng;
-  onChange: (value: LatLng, wardId?: string, wardName?: string) => void;
+  onChange: (value: LatLng, wardId?: string | null, wardName?: string | null) => void;
+  selectedWardId?: string | null;
   landmark?: string;
   onLandmarkChange?: (landmark: string) => void;
   className?: string;
@@ -18,6 +19,7 @@ export interface LocationPickerProps {
 export function LocationPicker({
   value,
   onChange,
+  selectedWardId,
   landmark = "",
   onLandmarkChange,
   className,
@@ -240,17 +242,46 @@ export function LocationPicker({
 
       {/* Ward & Landmark Info Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1 rounded-md border border-border bg-surface p-3">
-          <span className="text-xs font-semibold text-muted uppercase tracking-wider">
-            Detected BBMP Ward
-          </span>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" aria-hidden="true" />
-            <span className="text-sm font-medium text-ink">
-              {detectedWard ? detectedWard.wardName : "Bengaluru Metropolitan Area"}
+        {detectedWard ? (
+          <div className="flex flex-col gap-1 rounded-md border border-border bg-surface p-3">
+            <span className="text-xs font-semibold text-muted uppercase tracking-wider">
+              Detected BBMP Ward
             </span>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" aria-hidden="true" />
+              <span className="text-sm font-medium text-ink">
+                {detectedWard.wardName}
+              </span>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col gap-1.5 rounded-md border border-amber-300 bg-amber-50/70 p-3">
+            <span className="text-xs font-semibold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
+              <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" aria-hidden="true" />
+              Unmatched Ward Boundary
+            </span>
+            <p className="text-xs text-amber-900">
+              Point is on an unmapped boundary. Please pick your ward:
+            </p>
+            <select
+              id="picker-manual-ward"
+              value={selectedWardId || ""}
+              onChange={(e) => {
+                const wid = e.target.value;
+                const wObj = findWardById(wid);
+                onChange(value, wid || null, wObj?.wardName || null);
+              }}
+              className="mt-1 rounded-md border border-amber-300 bg-white px-2.5 py-1.5 text-xs font-medium text-ink focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">-- Select BBMP Ward --</option>
+              {getAllWards().map((w) => (
+                <option key={w.wardId} value={w.wardId}>
+                  {w.wardNo ? `Ward ${w.wardNo} - ` : ""}{w.wardName}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {onLandmarkChange && (
           <div className="flex flex-col gap-1">
