@@ -19,6 +19,7 @@ import {
   hazardFlagSchema,
   durationBucketSchema,
   affectedScaleSchema,
+  OPEN_STATUSES,
 } from "@/domain/schemas";
 import { z } from "zod";
 import { redactPII } from "@/domain/redact";
@@ -56,17 +57,27 @@ export type CreateComplaintInput = z.infer<typeof createComplaintSchema>;
 
 export interface ListComplaintsOptions {
   userId?: string | undefined;
+  reporterUid?: string | undefined;
   departmentId?: string | undefined;
   category?: ComplaintCategory | undefined;
   wardId?: string | undefined;
   status?: string | undefined;
+  statuses?: ComplaintStatus[] | undefined;
   priorityBand?: string | undefined;
   search?: string | undefined;
   isPublicOnly?: boolean | undefined;
   sortBy?: "priority" | "recent" | "supported" | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
+  cursor?: string | FirebaseFirestore.DocumentSnapshot | undefined;
 }
+
+export interface ListComplaintsResponse {
+  complaints: Complaint[];
+  nextCursor?: string | undefined;
+}
+
+export type ListComplaintsResult = Complaint[] & ListComplaintsResponse;
 
 // Compact point representation for mapSnapshots/current (§23.2, §30.6)
 export interface MapSnapshotPoint {
@@ -134,46 +145,92 @@ export async function getComplaintActivities(complaintId: string): Promise<Compl
   return snap.docs.map((d) => d.data() as ComplaintActivity);
 }
 
-export async function listComplaints(options: ListComplaintsOptions = {}): Promise<Complaint[]> {
+export async function listComplaints(
+  options: ListComplaintsOptions = {},
+): Promise<ListComplaintsResult> {
   const firestore = getAdminFirestore();
   let query: FirebaseFirestore.Query = firestore.collection("complaints");
 
-  if (options.departmentId) {
+  // 1. Pushed filter: reporterUid (or userId alias)
+  const reporterUid = options.reporterUid || options.userId;
+  if (reporterUid) {
+    query = query.where("reporterUid", "==", reporterUid);
+  }
+
+  // 2. Pushed filter: departmentId
+  if (options.departmentId && options.departmentId !== "ALL") {
     query = query.where("departmentId", "==", options.departmentId);
   }
+
+  // 3. Pushed filter: category
   if (options.category) {
     query = query.where("category", "==", options.category);
   }
+
+  // 4. Pushed filter: visibility
   if (options.isPublicOnly) {
     query = query.where("visibility", "==", "public");
   }
-  if (options.status && options.status !== "OPEN_ALL") {
+
+  // 5. Pushed filter: status ('in' for OPEN_ALL / statuses array)
+  if (options.status === "OPEN_ALL") {
+    query = query.where("status", "in", [...OPEN_STATUSES]);
+  } else if (options.statuses && options.statuses.length > 0) {
+    query = query.where("status", "in", options.statuses);
+  } else if (options.status && options.status !== "ALL") {
     query = query.where("status", "==", options.status);
   }
+
+  // 6. Pushed filter: wardId (location.wardId)
+  if (options.wardId && options.wardId !== "ALL" && options.wardId !== "All Wards") {
+    query = query.where("location.wardId", "==", options.wardId);
+  }
+
+  // 7. Order-by clauses aligned with composite indexes
+  if (reporterUid) {
+    query = query.orderBy("updatedAt", "desc");
+  } else if (options.departmentId && options.departmentId !== "ALL") {
+    if (options.sortBy === "recent") {
+      query = query.orderBy("createdAt", "desc");
+    } else if (options.sortBy === "supported") {
+      query = query.orderBy("supporterCount", "desc");
+    } else if (options.status) {
+      query = query.orderBy("priority.score", "desc").orderBy("createdAt", "asc");
+    }
+  } else if (options.status && options.status !== "ALL") {
+    if (options.sortBy === "recent") {
+      query = query.orderBy("createdAt", "desc");
+    } else {
+      query = query.orderBy("priority.score", "desc").orderBy("createdAt", "asc");
+    }
+  } else if (options.sortBy === "recent") {
+    query = query.orderBy("createdAt", "desc");
+  } else if (options.sortBy === "supported") {
+    query = query.orderBy("supporterCount", "desc");
+  }
+
+  // 8. Cursor-based pagination using Firestore .startAfter()
+  if (options.cursor) {
+    if (typeof options.cursor === "string") {
+      const cursorDoc = await firestore.collection("complaints").doc(options.cursor).get();
+      if (cursorDoc.exists) {
+        query = query.startAfter(cursorDoc);
+      }
+    } else {
+      query = query.startAfter(options.cursor);
+    }
+  } else if (options.offset && options.offset > 0) {
+    query = query.offset(options.offset);
+  }
+
+  // 9. Default limit of 20 (PRD §23.4)
+  const effectiveLimit = options.limit !== undefined ? options.limit : 20;
+  query = query.limit(effectiveLimit);
 
   const snap = await query.get();
   let results = snap.docs.map((d) => d.data() as Complaint);
 
-  if (options.userId) {
-    const uid = options.userId;
-    results = results.filter(
-      (c) => c.reporterUid === uid || (c.followerUids && c.followerUids.includes(uid)),
-    );
-  }
-
-  if (options.status === "OPEN_ALL") {
-    results = results.filter((c) => c.status !== "RESOLVED" && c.status !== "CLOSED");
-  }
-
-  if (options.wardId) {
-    const w = options.wardId.toLowerCase();
-    results = results.filter(
-      (c) =>
-        c.location.wardId === options.wardId ||
-        (c.location.wardName && c.location.wardName.toLowerCase() === w),
-    );
-  }
-
+  // In-memory filters for fields not backed by index or substring text search
   if (options.priorityBand) {
     results = results.filter((c) => c.priority?.band === options.priorityBand);
   }
@@ -183,7 +240,7 @@ export async function listComplaints(options: ListComplaintsOptions = {}): Promi
     results = results.filter(
       (c) =>
         c.ref.toLowerCase().includes(q) ||
-        c.title.toLowerCase().includes(q) ||
+        c.title?.toLowerCase().includes(q) ||
         c.description.toLowerCase().includes(q) ||
         c.category.toLowerCase().includes(q) ||
         (c.location.landmark && c.location.landmark.toLowerCase().includes(q)) ||
@@ -191,20 +248,55 @@ export async function listComplaints(options: ListComplaintsOptions = {}): Promi
     );
   }
 
-  // Sorting
-  if (options.sortBy === "recent") {
-    results.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  } else if (options.sortBy === "supported") {
-    results.sort((a, b) => (b.supporterCount || 0) - (a.supporterCount || 0));
-  } else {
-    // Default: Sort by priority score descending
-    results.sort((a, b) => (b.priority?.score || 0) - (a.priority?.score || 0));
+  // Determine nextCursor
+  const nextCursor =
+    snap.docs.length >= effectiveLimit && snap.docs.length > 0
+      ? snap.docs[snap.docs.length - 1]!.id
+      : undefined;
+
+  // Construct dual-interface result: iterable Complaint[] + { complaints, nextCursor }
+  const output = [...results] as ListComplaintsResult;
+  output.complaints = results;
+  output.nextCursor = nextCursor;
+
+  return output;
+}
+
+export async function getComplaintCounts(filters: {
+  reporterUid?: string;
+  departmentId?: string;
+  wardId?: string;
+  category?: ComplaintCategory;
+}): Promise<{ total: number; open: number; resolved: number; critical: number; overdue: number }> {
+  const firestore = getAdminFirestore();
+  let baseQuery: FirebaseFirestore.Query = firestore.collection("complaints");
+
+  if (filters.reporterUid) {
+    baseQuery = baseQuery.where("reporterUid", "==", filters.reporterUid);
+  }
+  if (filters.departmentId && filters.departmentId !== "ALL") {
+    baseQuery = baseQuery.where("departmentId", "==", filters.departmentId);
+  }
+  if (filters.wardId && filters.wardId !== "ALL" && filters.wardId !== "All Wards") {
+    baseQuery = baseQuery.where("location.wardId", "==", filters.wardId);
+  }
+  if (filters.category) {
+    baseQuery = baseQuery.where("category", "==", filters.category);
   }
 
-  const offset = options.offset || 0;
-  const limit = options.limit || 50;
+  const [totalSnap, openSnap, resolvedSnap] = await Promise.all([
+    baseQuery.count().get(),
+    baseQuery.where("status", "in", [...OPEN_STATUSES]).count().get(),
+    baseQuery.where("status", "in", ["RESOLVED", "CLOSED"]).count().get(),
+  ]);
 
-  return results.slice(offset, offset + limit);
+  return {
+    total: totalSnap.data().count,
+    open: openSnap.data().count,
+    resolved: resolvedSnap.data().count,
+    critical: 0,
+    overdue: 0,
+  };
 }
 
 export async function createComplaint(

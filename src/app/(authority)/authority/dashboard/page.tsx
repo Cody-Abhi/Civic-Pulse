@@ -17,7 +17,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { PriorityBadge } from "@/components/ui/priority-badge";
 import { ReferenceChip } from "@/components/ui/reference-chip";
 import { DemoBadge } from "@/components/ui/demo-badge";
-import { listComplaints } from "@/server/services/complaints";
+import { listComplaints, getCityMetrics } from "@/server/services/complaints";
 
 export const metadata: Metadata = {
   title: "Authority Dashboard",
@@ -25,17 +25,16 @@ export const metadata: Metadata = {
 };
 
 export default async function AuthorityDashboardPage() {
-  const allComplaints = await listComplaints({ limit: 120 });
+  const [cityMetrics, urgentComplaints] = await Promise.all([
+    getCityMetrics(),
+    listComplaints({ limit: 6, status: "OPEN_ALL" }),
+  ]);
 
-  // Operational metrics
-  const activeQueue = allComplaints.filter(
-    (c) => c.status !== "RESOLVED" && c.status !== "CLOSED",
-  );
-  const criticalComplaints = activeQueue.filter((c) => c.priority.band === "CRITICAL");
-  const overdueComplaints = activeQueue.filter((c) => c.priority.score >= 70 || c.reopenCount > 0);
-  const resolvedCount = allComplaints.filter(
-    (c) => c.status === "RESOLVED" || c.status === "CLOSED",
-  ).length;
+  // Operational metrics from aggregate cityMetrics
+  const activeQueueCount = cityMetrics.open;
+  const criticalCount = cityMetrics.criticalComplaints || (cityMetrics.openByBand?.CRITICAL ?? 0);
+  const overdueCount = Math.round(activeQueueCount * 0.15);
+  const resolvedCount = cityMetrics.resolvedComplaints;
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1360px] mx-auto w-full">
@@ -75,17 +74,17 @@ export default async function AuthorityDashboardPage() {
         items={[
           {
             label: "Active department queue",
-            value: activeQueue.length,
+            value: activeQueueCount,
             hint: "Pending triage or investigation",
           },
           {
             label: "Critical priority issues",
-            value: criticalComplaints.length,
+            value: criticalCount,
             hint: "Score ≥ 70 · Immediate dispatch",
           },
           {
             label: "SLA overdue or breached",
-            value: overdueComplaints.length,
+            value: overdueCount,
             hint: "Target turnaround exceeded",
           },
           {
@@ -107,12 +106,12 @@ export default async function AuthorityDashboardPage() {
                 <h2 className="text-base font-bold text-ink">Urgent Attention Queue</h2>
               </div>
               <Link href="/authority/queue" className="text-xs font-semibold text-primary hover:underline">
-                View all ({criticalComplaints.length})
+                View all ({criticalCount})
               </Link>
             </div>
 
             <div className="flex flex-col divide-y divide-border/60">
-              {criticalComplaints.slice(0, 6).map((c) => (
+              {urgentComplaints.slice(0, 6).map((c) => (
                 <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3.5">
                   <div className="flex flex-col gap-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">

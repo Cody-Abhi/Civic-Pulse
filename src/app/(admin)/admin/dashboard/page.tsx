@@ -7,7 +7,7 @@ import { MetricStrip, type MetricStripItem } from "@/components/data/metric-stri
 import { ChartFrame } from "@/components/data/chart-frame";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { Button } from "@/components/ui/button";
-import { getCityMetrics, getComplaints } from "@/server/services/complaints";
+import { getCityMetrics } from "@/server/services/complaints";
 import {
   listAdminUsers,
   getAdminDepartments,
@@ -24,18 +24,13 @@ export const metadata: Metadata = {
 
 export default async function AdminDashboardPage() {
   const metrics = await getCityMetrics();
-  const complaints = await getComplaints();
   const { total: totalUsers } = await listAdminUsers();
   const departments = await getAdminDepartments();
   const recentLogs = await getAuditLogs({ limit: 8 });
   const aiMetrics = await getAiMonitoringMetrics();
 
-  const openComplaints = complaints.filter(
-    (c) => c.status !== "RESOLVED" && c.status !== "REJECTED",
-  );
-  const overdueCount = openComplaints.filter(
-    (c) => c.priority.score >= 70 || c.reopenCount > 0,
-  ).length;
+  const openComplaintsCount = metrics.open;
+  const overdueCount = departments.reduce((acc, d) => acc + (d.overdueComplaints || 0), 0);
 
   const metricItems: MetricStripItem[] = [
     {
@@ -50,7 +45,7 @@ export default async function AdminDashboardPage() {
     },
     {
       label: "Active open queue",
-      value: openComplaints.length,
+      value: openComplaintsCount,
       hint: `${metrics.inProgressComplaints} in progress`,
     },
     {
@@ -176,7 +171,7 @@ export default async function AdminDashboardPage() {
               <div className="flex items-center justify-between">
                 <span className="text-ink-secondary">Synthetic corpus</span>
                 <span className="inline-flex items-center gap-1 rounded border border-border bg-surface px-2 py-0.5 text-xs font-semibold text-ink">
-                  {complaints.length} records
+                  {metrics.totalComplaints} records
                 </span>
               </div>
               <div className="flex items-center justify-between">

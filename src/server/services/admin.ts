@@ -14,7 +14,6 @@ import * as usersRepo from "@/server/repositories/users.repo";
 import * as departmentsRepo from "@/server/repositories/departments.repo";
 import * as settingsRepo from "@/server/repositories/settings.repo";
 import * as auditRepo from "@/server/repositories/audit.repo";
-import { getComplaints } from "./complaints";
 import type { SessionUser } from "@/server/auth/session";
 
 export type ListUsersOptions = usersRepo.ListUsersOptions;
@@ -48,15 +47,19 @@ export async function updateUserStatus(
 
 export async function listDepartments(): Promise<Department[]> {
   const depts = await departmentsRepo.listDepartments();
-  const complaints = await getComplaints();
+  const firestore = getAdminFirestore();
+
+  // Read pre-aggregated departmentMetrics (1 read per department, at most 7-10 docs)
+  const metricsSnap = await firestore.collection("departmentMetrics").get();
+  const metricsMap = new Map<string, { open?: number; overdue?: number }>();
+  metricsSnap.docs.forEach((doc) => {
+    metricsMap.set(doc.id, doc.data() as { open?: number; overdue?: number });
+  });
 
   return depts.map((dept) => {
-    const deptComplaints = complaints.filter((c) => c.departmentId === dept.id);
-    const openCount = deptComplaints.filter((c) => c.status !== "RESOLVED" && c.status !== "CLOSED").length;
-    const now = Date.now();
-    const overdueCount = deptComplaints.filter(
-      (c) => c.status !== "RESOLVED" && c.status !== "CLOSED" && new Date(c.slaDueAt).getTime() < now,
-    ).length;
+    const metric = metricsMap.get(dept.id);
+    const openCount = metric?.open ?? 0;
+    const overdueCount = metric?.overdue ?? 0;
 
     return {
       ...dept,
@@ -74,10 +77,15 @@ export async function updateDepartment(
   actor: SessionUser,
 ): Promise<Department> {
   if (updates.active === false) {
-    const complaints = await getComplaints();
-    const openCount = complaints.filter(
-      (c) => c.departmentId === id && c.status !== "RESOLVED" && c.status !== "CLOSED",
-    ).length;
+    const firestore = getAdminFirestore();
+    const openStatuses = ["SUBMITTED", "UNDER_REVIEW", "ASSIGNED", "IN_PROGRESS", "REOPENED"];
+    const snap = await firestore
+      .collection("complaints")
+      .where("departmentId", "==", id)
+      .where("status", "in", openStatuses)
+      .count()
+      .get();
+    const openCount = snap.data().count;
     if (openCount > 0) {
       throw new Error(`Reassign the ${openCount} open complaints first.`);
     }

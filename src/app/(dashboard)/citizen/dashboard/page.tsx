@@ -10,6 +10,8 @@ import { EmptyState } from "@/components/feedback/empty-state";
 import { Button } from "@/components/ui/button";
 import { getSessionUser } from "@/server/auth/session";
 import { listComplaints } from "@/server/services/complaints";
+import { getUserById } from "@/server/repositories/users.repo";
+import { getComplaintCounts } from "@/server/repositories/complaints.repo";
 
 export const metadata = {
   title: "Citizen Dashboard",
@@ -47,27 +49,44 @@ export default async function CitizenDashboardPage() {
   const user = await getSessionUser();
   const greeting = getGreeting();
   const userName = user?.displayName || "Citizen";
+  const citizenUid = user?.uid || "demo-citizen-uid";
 
-  // Query own complaints and public complaints
-  const allUserComplaints = await listComplaints({
-    userId: user?.uid || "demo-citizen-uid",
-    limit: 50,
-  });
+  // Query own complaints with limit: 5 and public complaints with limit: 6
+  const [recentReports, publicComplaints, userDoc] = await Promise.all([
+    listComplaints({
+      reporterUid: citizenUid,
+      limit: 5,
+    }),
+    listComplaints({
+      isPublicOnly: true,
+      limit: 6,
+    }),
+    getUserById(citizenUid),
+  ]);
 
-  const publicComplaints = await listComplaints({
-    isPublicOnly: true,
-    limit: 10,
-  });
+  // Derive counts from user.stats or count aggregation (PRD-§23.5)
+  let myOpenReports = 0;
+  let resolvedReports = 0;
+  let totalSupporters = 0;
+  let totalUserReports = 0;
 
-  // Calculate metrics
-  const openStatuses = new Set(["SUBMITTED", "UNDER_REVIEW", "ASSIGNED", "IN_PROGRESS", "REOPENED"]);
-  const myOpenReports = allUserComplaints.filter((c) => openStatuses.has(c.status)).length;
-  const resolvedReports = allUserComplaints.filter((c) => c.status === "RESOLVED" || c.status === "CLOSED").length;
-  const awaitingFeedback = allUserComplaints.filter((c) => c.status === "RESOLVED" && !c.feedback);
-  const totalSupporters = allUserComplaints.reduce((acc, c) => acc + (c.supporterCount || 0), 0);
+  if (userDoc?.stats) {
+    resolvedReports = userDoc.stats.resolved || 0;
+    totalSupporters = userDoc.stats.supportersOnMyReports || 0;
+    totalUserReports = userDoc.stats.filed || 0;
+    myOpenReports = Math.max(0, totalUserReports - resolvedReports);
+  } else {
+    const counts = await getComplaintCounts({ reporterUid: citizenUid });
+    myOpenReports = counts.open;
+    resolvedReports = counts.resolved;
+    totalUserReports = counts.total;
+    totalSupporters = recentReports.reduce((acc, c) => acc + (c.supporterCount || 0), 0);
+  }
 
-  const recentReports = allUserComplaints.slice(0, 5);
-  const nearYouReports = publicComplaints.filter((c) => c.reporterUid !== (user?.uid || "demo-citizen-uid")).slice(0, 4);
+  const awaitingFeedback = recentReports.filter((c) => c.status === "RESOLVED" && !c.feedback);
+  const nearYouReports = publicComplaints
+    .filter((c) => c.reporterUid !== citizenUid)
+    .slice(0, 4);
 
   return (
     <div className="flex flex-col gap-8 pb-12">
@@ -167,7 +186,7 @@ export default async function CitizenDashboardPage() {
                   Your recent reports
                 </h2>
                 <span className="rounded-full bg-surface-muted px-2 py-0.5 font-mono text-xs text-muted">
-                  {allUserComplaints.length}
+                  {totalUserReports}
                 </span>
               </div>
               <Link
