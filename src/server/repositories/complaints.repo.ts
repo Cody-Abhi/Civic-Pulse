@@ -32,6 +32,7 @@ import {
 } from "@/domain/categories";
 import { validateTransition } from "@/domain/transitions";
 import { isInsideBengaluru, findWardByPoint, findWardById, geohashEncode } from "@/domain/geo";
+import { verifyAnalysisToken } from "@/server/services/ai";
 import type { SessionUser } from "@/server/auth/session";
 
 export const createComplaintSchema = z.object({
@@ -342,16 +343,20 @@ export async function createComplaint(
 
   let linkedAnalysisId: string | null = null;
   if (validated.analysisToken) {
-    try {
-      const payload = Buffer.from(
-        validated.analysisToken.split(".")[0] || "",
-        "base64url",
-      ).toString("utf-8");
-      const [aId] = payload.split(":");
-      if (aId) linkedAnalysisId = aId;
-    } catch {
-      // ignore token parse errors
+    const verified = verifyAnalysisToken(validated.analysisToken);
+    if (!verified) {
+      const err = new Error("Invalid or expired analysis token.");
+      (err as unknown as { code: string; status: number }).code = "INVALID_ANALYSIS_TOKEN";
+      (err as unknown as { code: string; status: number }).status = 400;
+      throw err;
     }
+    if (verified.uid !== "anon" && verified.uid !== user.uid) {
+      const err = new Error("Analysis token does not belong to the current user.");
+      (err as unknown as { code: string; status: number }).code = "INVALID_ANALYSIS_TOKEN_USER";
+      (err as unknown as { code: string; status: number }).status = 403;
+      throw err;
+    }
+    linkedAnalysisId = verified.analysisId;
   }
 
   // Validation of Bengaluru municipal limits (§30.1)
@@ -576,6 +581,19 @@ export async function createComplaint(
         response: { complaint, publicUrl: complaint.visibility === "public" ? `/complaints/${complaint.ref}` : null },
         createdAt: nowIso,
       });
+    }
+
+    // J. Link aiAnalyses record if analysisToken provided (§24.2, §24.3)
+    if (linkedAnalysisId) {
+      const analysisDocRef = firestore.collection("aiAnalyses").doc(linkedAnalysisId);
+      tx.set(
+        analysisDocRef,
+        {
+          complaintId: id,
+          updatedAt: nowIso,
+        },
+        { merge: true },
+      );
     }
 
     return complaint;
