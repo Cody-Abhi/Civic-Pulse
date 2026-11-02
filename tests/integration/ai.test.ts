@@ -6,9 +6,9 @@ import {
   generateGroundedInsights,
   signAnalysisToken,
   verifyAnalysisToken,
-} from "./ai";
-import type { SessionUser } from "../auth/session";
-import { setAiPaused } from "./admin";
+} from "@/server/services/ai";
+import type { SessionUser } from "@/server/auth/session";
+import { setAiPaused } from "@/server/services/admin";
 
 describe("AI Processing & Fallback Service (§27, §28, §31.4)", () => {
   const dummyActor: SessionUser = {

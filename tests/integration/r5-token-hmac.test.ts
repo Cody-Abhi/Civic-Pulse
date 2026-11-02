@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import * as crypto from "crypto";
 import { signAnalysisToken, verifyAnalysisToken } from "@/server/services/ai";
 import { createComplaint } from "@/server/repositories/complaints.repo";
@@ -12,6 +12,9 @@ describe("Milestone 5 (R5): Analysis Token HMAC Verification (PRD-§24.2, PRD-§
     role: "citizen",
     emailVerified: true,
     displayName: "R5 Citizen Tester",
+    departmentId: null,
+    status: "active",
+    homeWardId: null,
   };
 
   describe("1. HMAC Signature & Expiry Cryptographic Properties", () => {
@@ -79,6 +82,7 @@ describe("Milestone 5 (R5): Analysis Token HMAC Verification (PRD-§24.2, PRD-§
             title: "Dangerous Pothole on 100ft road",
             description: "Deep pothole causing accidents near Metro pillar 120 in Indiranagar.",
             category: "POTHOLE",
+            categorySource: "user",
             analysisToken: "invalid-signature-token.abc123456",
             location: {
               lat: 12.9719,
@@ -107,6 +111,7 @@ describe("Milestone 5 (R5): Analysis Token HMAC Verification (PRD-§24.2, PRD-§
             title: "Dangerous Pothole on 100ft road",
             description: "Deep pothole causing accidents near Metro pillar 120 in Indiranagar.",
             category: "POTHOLE",
+            categorySource: "user",
             analysisToken: otherUserToken,
             location: {
               lat: 12.9719,

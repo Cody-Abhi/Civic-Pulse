@@ -171,27 +171,51 @@ export function isInsideBengaluru(point: LatLng): boolean {
   );
 }
 
-import wardsGeoJson from "@/server/geo/wards.json";
+import wardsGeoJson from "./wards.json";
+
+export interface WardGeometryPolygon {
+  type: "Polygon";
+  coordinates: number[][][];
+}
+
+export interface WardGeometryMultiPolygon {
+  type: "MultiPolygon";
+  coordinates: number[][][][];
+}
+
+export type WardGeometry = WardGeometryPolygon | WardGeometryMultiPolygon;
+
+export interface RawWardFeature {
+  type: "Feature";
+  properties: {
+    wardId: string;
+    wardName: string;
+    wardNo?: string | undefined;
+  };
+  geometry: WardGeometry;
+}
 
 export interface WardBoundaryFeature {
   wardId: string;
   wardName: string;
-  wardNo?: string;
-  geometry?: {
-    type: "Polygon" | "MultiPolygon";
-    coordinates: any;
-  };
+  wardNo?: string | undefined;
+  geometry?: WardGeometry | undefined;
   coordinates: number[][][];
 }
 
+const rawWardFeatures = (wardsGeoJson as { features: RawWardFeature[] }).features;
+
 /** Real Bengaluru ward definitions from DataMeet Municipal_Spatial_Data (CC BY 4.0) */
-export const BENGALURU_WARDS: WardBoundaryFeature[] = (wardsGeoJson.features as any[]).map((f) => ({
+export const BENGALURU_WARDS: WardBoundaryFeature[] = rawWardFeatures.map((f) => ({
   wardId: f.properties.wardId,
   wardName: f.properties.wardName,
   wardNo: f.properties.wardNo,
   geometry: f.geometry,
   // Backwards compatibility for code expecting single outer ring polygon coordinates
-  coordinates: f.geometry.type === "Polygon" ? f.geometry.coordinates : f.geometry.coordinates[0],
+  coordinates:
+    f.geometry.type === "Polygon"
+      ? f.geometry.coordinates
+      : (f.geometry.coordinates[0] ?? []),
 }));
 
 export const PILOT_WARD_BOUNDARIES: WardBoundaryFeature[] = BENGALURU_WARDS;
@@ -220,18 +244,33 @@ export function findWardByPoint(
   for (const ward of wards) {
     if (ward.geometry) {
       if (ward.geometry.type === "Polygon") {
-        if (pointInPolygon(point, ward.geometry.coordinates)) {
+        if (
+          pointInPolygon(
+            point,
+            ward.geometry.coordinates as unknown as ReadonlyArray<ReadonlyArray<readonly [number, number]>>,
+          )
+        ) {
           return { wardId: ward.wardId, wardName: ward.wardName };
         }
       } else if (ward.geometry.type === "MultiPolygon") {
         for (const poly of ward.geometry.coordinates) {
-          if (pointInPolygon(point, poly)) {
+          if (
+            pointInPolygon(
+              point,
+              poly as unknown as ReadonlyArray<ReadonlyArray<readonly [number, number]>>,
+            )
+          ) {
             return { wardId: ward.wardId, wardName: ward.wardName };
           }
         }
       }
     } else if (ward.coordinates) {
-      if (pointInPolygon(point, ward.coordinates as unknown as ReadonlyArray<ReadonlyArray<readonly [number, number]>>)) {
+      if (
+        pointInPolygon(
+          point,
+          ward.coordinates as unknown as ReadonlyArray<ReadonlyArray<readonly [number, number]>>,
+        )
+      ) {
         return { wardId: ward.wardId, wardName: ward.wardName };
       }
     }

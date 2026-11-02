@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 import { GET as getDemoCredentials } from "@/app/api/demo/credentials/route";
 import { POST as postDemoReset } from "@/app/api/admin/demo/reset/route";
 import * as adminService from "@/server/services/admin";
@@ -10,9 +11,31 @@ describe("Milestone 6 (R6): Demo Credentials & Administration Security (PRD-§25
     vi.restoreAllMocks();
   });
 
+  const citizenUser: SessionUser = {
+    uid: "citizen-1",
+    email: "citizen@civicpulse.local",
+    displayName: "Citizen 1",
+    role: "citizen",
+    departmentId: null,
+    status: "active",
+    emailVerified: true,
+    homeWardId: null,
+  };
+
+  const adminUser: SessionUser = {
+    uid: "admin-1",
+    email: "admin@civicpulse.local",
+    displayName: "Admin 1",
+    role: "admin",
+    departmentId: null,
+    status: "active",
+    emailVerified: true,
+    homeWardId: null,
+  };
+
   describe("1. Public Demo Credentials Exposure Sanitization", () => {
     it("exposes only citizen and authority accounts publicly via API", async () => {
-      const req = new Request("http://localhost:3000/api/demo/credentials");
+      const req = new NextRequest("http://localhost:3000/api/demo/credentials");
       const res = await getDemoCredentials(req);
       expect(res.status).toBe(200);
 
@@ -35,7 +58,7 @@ describe("Milestone 6 (R6): Demo Credentials & Administration Security (PRD-§25
     it("rejects unauthenticated requests with 401", async () => {
       vi.spyOn(sessionModule, "getSessionUser").mockResolvedValue(null);
 
-      const req = new Request("http://localhost:3000/api/admin/demo/reset", {
+      const req = new NextRequest("http://localhost:3000/api/admin/demo/reset", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -49,15 +72,9 @@ describe("Milestone 6 (R6): Demo Credentials & Administration Security (PRD-§25
     });
 
     it("rejects non-admin role with 403 Forbidden", async () => {
-      const citizenUser: SessionUser = {
-        uid: "citizen-1",
-        email: "citizen@civicpulse.local",
-        role: "citizen",
-        emailVerified: true,
-      };
       vi.spyOn(sessionModule, "getSessionUser").mockResolvedValue(citizenUser);
 
-      const req = new Request("http://localhost:3000/api/admin/demo/reset", {
+      const req = new NextRequest("http://localhost:3000/api/admin/demo/reset", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -71,15 +88,9 @@ describe("Milestone 6 (R6): Demo Credentials & Administration Security (PRD-§25
     });
 
     it("rejects request missing confirmation body with 400 Bad Request", async () => {
-      const adminUser: SessionUser = {
-        uid: "admin-1",
-        email: "admin@civicpulse.local",
-        role: "admin",
-        emailVerified: true,
-      };
       vi.spyOn(sessionModule, "getSessionUser").mockResolvedValue(adminUser);
 
-      const req = new Request("http://localhost:3000/api/admin/demo/reset", {
+      const req = new NextRequest("http://localhost:3000/api/admin/demo/reset", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -95,15 +106,9 @@ describe("Milestone 6 (R6): Demo Credentials & Administration Security (PRD-§25
     });
 
     it("rejects request with incorrect confirmation string with 400 Bad Request", async () => {
-      const adminUser: SessionUser = {
-        uid: "admin-1",
-        email: "admin@civicpulse.local",
-        role: "admin",
-        emailVerified: true,
-      };
       vi.spyOn(sessionModule, "getSessionUser").mockResolvedValue(adminUser);
 
-      const req = new Request("http://localhost:3000/api/admin/demo/reset", {
+      const req = new NextRequest("http://localhost:3000/api/admin/demo/reset", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -117,12 +122,6 @@ describe("Milestone 6 (R6): Demo Credentials & Administration Security (PRD-§25
     });
 
     it("accepts request with exact confirmation string 'RESET DEMO' and calls resetDemoData", async () => {
-      const adminUser: SessionUser = {
-        uid: "admin-1",
-        email: "admin@civicpulse.local",
-        role: "admin",
-        emailVerified: true,
-      };
       vi.spyOn(sessionModule, "getSessionUser").mockResolvedValue(adminUser);
       const resetSpy = vi.spyOn(adminService, "resetDemoData").mockResolvedValue({
         success: true,
@@ -130,7 +129,7 @@ describe("Milestone 6 (R6): Demo Credentials & Administration Security (PRD-§25
         seededCount: 240,
       });
 
-      const req = new Request("http://localhost:3000/api/admin/demo/reset", {
+      const req = new NextRequest("http://localhost:3000/api/admin/demo/reset", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -148,3 +147,4 @@ describe("Milestone 6 (R6): Demo Credentials & Administration Security (PRD-§25
     });
   });
 });
+

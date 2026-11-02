@@ -159,6 +159,7 @@ describe("Milestone 2 (R2): Firestore Read Quota Optimization Tests (PRD-§23.4,
       const { complaints, nextCursor } = await listComplaints({ reporterUid: reporterB });
       expect(Array.isArray(complaints)).toBe(true);
       expect(complaints.length).toBe(5);
+      expect(nextCursor).toBeUndefined();
     });
 
     it("supports array operations directly on returned result", async () => {

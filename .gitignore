@@ -51,6 +51,9 @@ firebase-admin*.json
 /test-results/
 /coverage/
 
+# agents
+.agents/
+
 # vercel
 .vercel
 

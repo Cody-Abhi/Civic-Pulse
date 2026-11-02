@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import * as fs from "fs";
 import * as path from "path";
+import type { NextRequest } from "next/server";
 import nextConfig from "@/../next.config";
 import { proxyMiddleware } from "@/middleware/proxy";
 import robots from "@/app/robots";
@@ -22,7 +23,7 @@ describe("Milestone 8 (R8): System Pages, Headers, Metadata, and Proxy (PRD-§36
       const rootRoute = headersConfig.find((h: { source: string }) => h.source === "/:path*");
       expect(rootRoute).toBeDefined();
 
-      const headerMap = new Map(rootRoute.headers.map((h: { key: string; value: string }) => [h.key, h.value]));
+      const headerMap = new Map(rootRoute!.headers.map((h: { key: string; value: string }) => [h.key, h.value]));
 
       expect(headerMap.has("Content-Security-Policy")).toBe(true);
       expect(headerMap.get("Content-Security-Policy")).toContain("default-src 'self'");
@@ -90,7 +91,7 @@ describe("Milestone 8 (R8): System Pages, Headers, Metadata, and Proxy (PRD-§36
         cookies: {
           get: () => undefined,
         },
-      } as any;
+      } as unknown as NextRequest;
 
       const res = proxyMiddleware(mockReq);
       expect(res.status).toBe(307);
@@ -106,10 +107,11 @@ describe("Milestone 8 (R8): System Pages, Headers, Metadata, and Proxy (PRD-§36
         cookies: {
           get: (name: string) => (name === "__session" ? { value: "valid-session-jwt" } : undefined),
         },
-      } as any;
+      } as unknown as NextRequest;
 
       const res = proxyMiddleware(mockReq);
       expect(res.status).toBe(200);
     });
   });
 });
+

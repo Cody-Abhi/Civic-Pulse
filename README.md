@@ -14,17 +14,22 @@ to resolution.
 
 ---
 
-## Live Demo Accounts & Instant Sign-In
+## Live Production Deployment & Demo Accounts
+
+- **Live Application URL**: [https://civicpulse.vercel.app](https://civicpulse.vercel.app)
+- **GitHub Repository**: [https://github.com/Cody-Abhi/Civic-Pulse](https://github.com/Cody-Abhi/Civic-Pulse)
 
 For testing and grading without manual registration, seeded demo credentials are pre-configured:
 
-| Role | Account Email | Default Password | Workspace Capabilities |
+| Role | Account Email | Default Password | Workspace Capabilities & Notes |
 | :--- | :--- | :--- | :--- |
-| **Citizen** | `citizen@demo.civicpulse.invalid` | `CivicPulseDemo2026!` | 6-step complaint wizard, Priority Receipt, duplicate radar, status tracking, withdrawal (T2), resolution feedback (T8/T9). |
-| **Authority** | `roads@demo.civicpulse.invalid` | `CivicPulseDemo2026!` | Department triage queue, priority matrix, SLA countdown, resolution evidence upload, status transitions. |
-| **Administrator** | `admin@demo.civicpulse.invalid` | `CivicPulseDemo2026!` | Governance dashboard, role & department management, algorithm weights adjustment, audit logs export, AI rate limiting & pause. |
+| **Citizen** | `citizen@demo.civicpulse.invalid` | `CivicPulseDemo2026!` | 6-step complaint wizard, Priority Receipt, duplicate radar, status tracking, withdrawal (T2), resolution feedback (T8/T9). Quick 1-click login on `/login`. |
+| **Authority** | `roads@demo.civicpulse.invalid` | `CivicPulseDemo2026!` | Department triage queue, priority matrix, SLA countdown, resolution evidence upload, status transitions. Quick 1-click login on `/login`. |
+| **Administrator** | `admin@demo.civicpulse.invalid` | `CivicPulseDemo2026!` | Governance dashboard, role & department management, algorithm weights adjustment, audit logs export, AI rate limiting & pause. (Admin credentials are not served over public APIs; manual password entry required). |
 
-> On the `/login` page, click any of the **Quick Sign In** demo cards for 1-click credential population and authentication.
+> On the `/login` page, click the **Citizen Demo** or **Roads Authority Demo** card for 1-click credential population and authentication.
+>
+> **Demo Data Reset Guard**: The demo database reset route requires a typed confirmation (`"RESET DEMO"`) and automatically logs a non-repudiable audit event recording the actor UID, timestamp, and client IP.
 
 ---
 
@@ -96,7 +101,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Verification & Test Suites
 
-CivicPulse includes a rigorous, multi-tiered test suite covering unit tests, domain logic, security rules, and end-to-end user journeys:
+CivicPulse includes a rigorous, multi-tiered partitioned test suite covering pure unit tests, domain logic, security rules, integration contracts, and end-to-end user journeys:
 
 ```bash
 # Typecheck (0 errors)
@@ -105,17 +110,22 @@ pnpm typecheck
 # Linting & Token Guard (0 errors, 0 warnings)
 pnpm lint
 
-# Unit & Integration Tests (177 tests across 16 files)
+# Pure Unit Tests (Fast, zero network, zero hang: 134 tests across 10 files)
 pnpm test
+# or explicitly:
+pnpm run test:unit
+
+# Emulator-backed Integration Tests (requires Java for Firebase Emulators)
+pnpm run test:integration
 
 # Firestore Security Rules Tests (12 security test cases)
-pnpm test:rules
+pnpm run test:rules
+
+# End-to-End Responsive & WCAG 2.1 AA Journeys
+pnpm run test:e2e
 
 # Zero-404 Link Crawler E2E (Crawls all role routes with zero 404s)
 pnpm exec playwright test tests/e2e/link-crawler.spec.ts
-
-# Full Responsive & WCAG 2.1 AA Journeys
-pnpm exec playwright test tests/e2e/journeys.spec.ts
 
 # Production Build
 pnpm build

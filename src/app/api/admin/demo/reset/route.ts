@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 const resetDemoSchema = z.object({
   confirmation: z.literal("RESET DEMO", {
-    errorMap: () => ({ message: 'Typed confirmation must equal "RESET DEMO"' }),
+    message: 'Typed confirmation must equal "RESET DEMO"',
   }),
 });
 
