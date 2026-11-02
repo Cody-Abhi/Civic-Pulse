@@ -197,9 +197,9 @@ test.describe("Full Internal Link Crawler & Zero-404 Verification (PRD UI-14..22
   test("Crawl Admin Governance Workspace and assert zero 404s on all internal links", async ({ page }) => {
     // 1. Sign in as admin
     await page.goto("/login", { waitUntil: "domcontentloaded" });
-    const demoBtn = page.locator("button:has-text('Admin Demo')");
-    await demoBtn.waitFor({ state: "visible", timeout: 15000 });
-    await demoBtn.click();
+    await page.fill("input[type='email']", "admin@demo.civicpulse.invalid");
+    await page.fill("input[type='password']", "CivicPulseDemo2026!");
+    await page.click("button[type='submit']");
     await page.waitForURL((url) => url.pathname.includes("/admin"), { timeout: 25000 });
 
     const adminSeeds = [

@@ -165,9 +165,9 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
   test("Admin Journey: login, audit logs, and AI telemetry monitoring", async ({ page }) => {
     // Login
     await page.goto("/login", { waitUntil: "domcontentloaded" });
-    const demoBtn = page.locator("button:has-text('Admin Demo')");
-    await demoBtn.waitFor({ state: "visible", timeout: 15000 });
-    await demoBtn.click();
+    await page.fill("input[type='email']", "admin@demo.civicpulse.invalid");
+    await page.fill("input[type='password']", "CivicPulseDemo2026!");
+    await page.click("button[type='submit']");
 
     // Navigate to admin area
     await page.waitForURL((url) => url.pathname.includes("/admin"), { timeout: 20000 });
