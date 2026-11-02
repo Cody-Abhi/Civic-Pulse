@@ -368,11 +368,11 @@ export default async function HomePage() {
                     <p className="text-muted">
                       &quot;Pothole on 100ft Road near 12th Main&quot; was reported 2 days ago by 3 neighbours.
                     </p>
-                    <div className="flex gap-2 pt-1">
-                      <Button size="sm" className="h-8 text-xs font-semibold">
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <Button size="sm" className="min-h-[44px] sm:min-h-[32px] text-xs font-semibold">
                         Add my voice (+1)
                       </Button>
-                      <Button size="sm" variant="outline" className="h-8 text-xs">
+                      <Button size="sm" variant="outline" className="min-h-[44px] sm:min-h-[32px] text-xs font-semibold">
                         Report separate issue
                       </Button>
                     </div>
@@ -465,7 +465,7 @@ export default async function HomePage() {
                   </p>
                   <div className="pt-2">
                     <Link href="/about">
-                      <Button variant="outline" size="sm" className="text-xs font-semibold">
+                      <Button variant="outline" size="sm" className="min-h-[44px] sm:min-h-[32px] text-xs font-semibold">
                         Read full methodology
                       </Button>
                     </Link>

@@ -175,7 +175,7 @@ export function QueueView({ initialComplaints }: QueueViewProps) {
     {
       id: "ref",
       header: "Reference",
-      widthPx: 170,
+      widthPx: 200,
       cell: (row) => <ReferenceChip reference={row.ref} />,
     },
     {

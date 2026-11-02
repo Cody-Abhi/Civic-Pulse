@@ -404,7 +404,8 @@ export function ExploreView({ initialComplaints }: ExploreViewProps) {
                     type="button"
                     onClick={(e) => handleSupport(item.id, e)}
                     disabled={supportingId === item.id}
-                    className={`inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-colors ${
+                    aria-label={`Add your voice in support. Current supporters: ${totalSupporters}`}
+                    className={`inline-flex min-h-[44px] sm:min-h-[32px] items-center gap-1.5 rounded-md px-3 py-2 sm:py-1 text-xs font-semibold transition-colors ${
                       hasSupported
                         ? "bg-primary/10 text-primary border border-primary/30"
                         : "bg-surface-subtle text-ink-secondary hover:bg-primary/10 hover:text-primary border border-border"

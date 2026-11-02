@@ -46,8 +46,8 @@ export function ReferenceChip({
       type={copyable ? "button" : undefined}
       onClick={copyable ? handleCopy : undefined}
       className={cn(
-        "group inline-flex items-center gap-1.5 rounded-xs border border-border bg-sunken font-mono font-medium text-ink transition-colors",
-        size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-1 text-xs",
+        "group inline-flex items-center gap-1.5 rounded-xs border border-border bg-sunken font-mono font-medium text-ink transition-colors whitespace-nowrap shrink-0",
+        size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-1 text-[13px]",
         copyable && "cursor-pointer hover:border-primary/40 hover:bg-surface active:scale-[0.98]",
         className,
       )}

@@ -156,7 +156,12 @@ export default function AboutPage() {
         </p>
 
         {/* Weights Table */}
-        <div className="my-6 overflow-x-auto rounded-md border border-border bg-surface">
+        <div
+          tabIndex={0}
+          role="region"
+          aria-label="Default CivicPulse priority factor weights table"
+          className="my-6 overflow-x-auto rounded-md border border-border bg-surface focus:outline-none focus:ring-1 focus:ring-primary"
+        >
           <table className="w-full text-left text-sm">
             <caption className="sr-only">Default CivicPulse priority factor weights</caption>
             <thead className="border-b border-border bg-sunken text-xs font-semibold text-muted uppercase">
