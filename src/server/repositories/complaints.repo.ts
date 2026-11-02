@@ -765,11 +765,16 @@ export async function supportComplaint(
     const mapSnap = await tx.get(mapSnapRef);
 
     if (complaint.reporterUid === user.uid) {
-      throw new Error("Cannot support your own report");
+      const err = new Error("Cannot support your own report") as Error & { status?: number; code?: string };
+      err.status = 403;
+      err.code = "FORBIDDEN";
+      throw err;
     }
 
     if (complaint.supporterUids && complaint.supporterUids.includes(user.uid)) {
-      const err = new Error("ALREADY_SUPPORTED");
+      const err = new Error("Already supported this report") as Error & { status?: number; code?: string };
+      err.status = 409;
+      err.code = "ALREADY_SUPPORTED";
       throw err;
     }
 
