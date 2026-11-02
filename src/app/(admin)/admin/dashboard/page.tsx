@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import * as React from "react";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
@@ -15,6 +16,11 @@ import {
 } from "@/server/services/admin";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Admin Overview",
+  description: "Comprehensive municipal city administration overview, department performance, and SLA monitoring.",
+};
 
 export default async function AdminDashboardPage() {
   const metrics = await getCityMetrics();

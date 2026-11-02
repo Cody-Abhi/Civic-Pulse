@@ -57,6 +57,7 @@ const ADMIN_NAV: SidebarNavItem[] = [
   { label: "City analytics", href: "/admin/analytics", icon: BarChart3 },
   { label: "AI health", href: "/admin/ai-monitoring", icon: Cpu },
   { label: "Audit logs", href: "/admin/audit-logs", icon: History },
+  { label: "Notifications", href: "/admin/notifications", icon: Bell },
   { label: "Settings", href: "/admin/settings", icon: Shield },
 ];
 
@@ -97,10 +98,7 @@ export function Sidebar({
       {/* Brand Header */}
       <div className="flex h-16 items-center border-b border-border px-4 lg:px-6">
         <Link href="/" className="flex items-center gap-2.5 focus:outline-none">
-          <CivicPulseLogo size="sm" showTagline={false} />
-          <span className="hidden font-bold tracking-tight text-ink lg:inline">
-            CivicPulse
-          </span>
+          <CivicPulseLogo size="sm" variant="dark" showTagline={false} />
         </Link>
       </div>
 

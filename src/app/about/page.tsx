@@ -17,7 +17,7 @@ import { DEFAULT_WEIGHTS, DUPLICATE_SETTINGS } from "@/domain/categories";
 import type { PriorityResult } from "@/domain/types";
 
 export const metadata: Metadata = {
-  title: "About & Methodology | CivicPulse AI",
+  title: "About & Methodology",
   description:
     "Learn how CivicPulse AI combines deterministic priority formulas, local spatial duplicate radar, and advisory Gemini AI to transform civic grievance redressal.",
 };

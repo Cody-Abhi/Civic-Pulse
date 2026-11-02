@@ -40,8 +40,8 @@ export function UsersClient({ initialUsers, departments }: UsersClientProps) {
       if (search) {
         const q = search.toLowerCase();
         const matches =
-          u.displayName.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q) ||
+          (u.displayName || "").toLowerCase().includes(q) ||
+          (u.email || "").toLowerCase().includes(q) ||
           (u.departmentId && u.departmentId.toLowerCase().includes(q));
         if (!matches) return false;
       }
@@ -155,7 +155,7 @@ export function UsersClient({ initialUsers, departments }: UsersClientProps) {
                 : "bg-gray-100 text-gray-800"
           }`}
         >
-          {row.role.toUpperCase()}
+          {(row.role || "citizen").toUpperCase()}
         </span>
       ),
     },
@@ -327,7 +327,7 @@ export function UsersClient({ initialUsers, departments }: UsersClientProps) {
               </div>
               <div className="text-xs text-muted-foreground">{user.email}</div>
               <div className="flex items-center gap-2 text-xs">
-                <span className="font-semibold uppercase text-primary">{user.role}</span>
+                <span className="font-semibold uppercase text-primary">{user.role || "citizen"}</span>
                 {user.departmentId && (
                   <span className="text-muted-foreground">&middot; {user.departmentId.toUpperCase()}</span>
                 )}

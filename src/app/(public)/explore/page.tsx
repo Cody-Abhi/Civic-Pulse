@@ -6,7 +6,7 @@ import { PublicFooter } from "@/components/layout/public-footer";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Explore Civic Issues · Public Ledger",
+  title: "Explore Civic Issues",
   description:
     "Search, filter and inspect civic issues reported across Bengaluru wards. Prioritised deterministically with public priority receipts.",
 };

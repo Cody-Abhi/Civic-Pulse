@@ -27,13 +27,11 @@ let emulatorsConnected = false;
 if (isFirebaseClientConfigured()) {
   app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
   auth = getAuth(app);
-  db = getFirestore(app);
 
   if (clientEnv.USE_EMULATORS && !emulatorsConnected && typeof window !== "undefined") {
     try {
       const emulatorHost = window.location.hostname === "127.0.0.1" ? "127.0.0.1" : "localhost";
       connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
-      connectFirestoreEmulator(db, emulatorHost, 8080);
       emulatorsConnected = true;
     } catch {
       // Emulators may already be connected in fast refresh
@@ -66,6 +64,32 @@ export function getFirebaseAuth(): Auth {
     throw new Error("Firebase Auth is not configured. Set NEXT_PUBLIC_FIREBASE_* in environment.");
   }
   return auth;
+}
+
+/**
+ * Returns the client Firestore instance lazily when requested.
+ */
+export function getFirebaseFirestore(): Firestore {
+  if (!db) {
+    if (!app && isFirebaseClientConfigured()) {
+      app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    }
+    if (app) {
+      db = getFirestore(app);
+      if (clientEnv.USE_EMULATORS && typeof window !== "undefined") {
+        try {
+          const emulatorHost = window.location.hostname === "127.0.0.1" ? "127.0.0.1" : "localhost";
+          connectFirestoreEmulator(db, emulatorHost, 8080);
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }
+  if (!db) {
+    throw new Error("Firestore client is not configured.");
+  }
+  return db;
 }
 
 /**

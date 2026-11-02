@@ -20,6 +20,7 @@ export async function generateMetadata({
   return {
     title: `[Workspace] ${complaint.ref} · ${complaint.title}`,
     description: `Authority dispatch workspace for complaint ${complaint.ref}. Priority score: ${complaint.priority.score}/100.`,
+    robots: { index: false, follow: false },
   };
 }
 

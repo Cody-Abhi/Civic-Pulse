@@ -20,7 +20,7 @@ import { DemoBadge } from "@/components/ui/demo-badge";
 import { listComplaints } from "@/server/services/complaints";
 
 export const metadata: Metadata = {
-  title: "Authority Operations Dashboard · CivicPulse AI",
+  title: "Authority Dashboard",
   description: "Operational dispatch dashboard for municipal engineers and ward supervisors.",
 };
 

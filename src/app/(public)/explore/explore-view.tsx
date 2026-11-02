@@ -370,9 +370,9 @@ export function ExploreView({ initialComplaints }: ExploreViewProps) {
               >
                 <div className="flex flex-col gap-3">
                   {/* Top Bar: Reference + Badges */}
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <ReferenceChip reference={item.ref} />
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <PriorityBadge band={item.priority.band} score={item.priority.score} size="sm" />
                       <StatusBadge status={item.status} size="sm" />
                     </div>
@@ -404,7 +404,6 @@ export function ExploreView({ initialComplaints }: ExploreViewProps) {
                     type="button"
                     onClick={(e) => handleSupport(item.id, e)}
                     disabled={supportingId === item.id}
-                    aria-label={`Add your voice in support. Current supporters: ${totalSupporters}`}
                     className={`inline-flex min-h-[44px] sm:min-h-[32px] items-center gap-1.5 rounded-md px-3 py-2 sm:py-1 text-xs font-semibold transition-colors ${
                       hasSupported
                         ? "bg-primary/10 text-primary border border-primary/30"
@@ -412,8 +411,7 @@ export function ExploreView({ initialComplaints }: ExploreViewProps) {
                     }`}
                   >
                     <Icon icon={ThumbsUp} size={12} className={hasSupported ? "fill-primary" : ""} />
-                    <span>{totalSupporters}</span>
-                    <span className="hidden sm:inline">{hasSupported ? "Supported" : "Add voice"}</span>
+                    <span>{totalSupporters} {hasSupported ? "Supported" : "Add voice"}</span>
                   </button>
 
                   <div className="flex items-center gap-1 text-xs font-medium text-muted">

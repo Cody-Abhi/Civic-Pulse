@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import * as React from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { getComplaints } from "@/server/services/complaints";
 import { getAdminDepartments } from "@/server/services/admin";
 import { AdminComplaintsClient } from "./admin-complaints-client";
+
+export const metadata: Metadata = {
+  title: "City Complaints Oversight",
+  description: "Comprehensive city-wide complaint register, duplicate clusters review, and safety flagged reports.",
+};
 
 export default async function AdminComplaintsPage() {
   const complaints = await getComplaints();

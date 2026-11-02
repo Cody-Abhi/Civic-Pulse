@@ -5,14 +5,15 @@ import { BRAND_PRIMARY_HEX } from "@/lib/brand";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.APP_URL || "https://civicpulse.vercel.app"),
   title: {
-    default: "CivicPulse AI — Turning Citizen Voices into Intelligent City Action",
-    template: "%s · CivicPulse AI",
+    default: "CivicPulse — Transparent Civic Action",
+    template: "%s · CivicPulse",
   },
   description:
-    "CivicPulse AI turns free-text civic reports into structured, located, prioritised records. Independent civic-tech prototype — not affiliated with any government body.",
-  applicationName: "CivicPulse AI",
-  authors: [{ name: "CivicPulse AI" }],
+    "CivicPulse AI turns free-text civic reports into structured, located, prioritised records with transparent 7-factor priority receipts. Independent civic-tech prototype — not affiliated with any government body.",
+  applicationName: "CivicPulse",
+  authors: [{ name: "CivicPulse Team" }],
   robots: { index: true, follow: true },
 };
 

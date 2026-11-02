@@ -44,19 +44,19 @@ export async function listAdminUsers(options: ListUsersOptions = {}): Promise<{
   // Firestore requires index on composite filters; retrieve and filter in memory if searching
   const snap = await query.get();
   let users = snap.docs.map((d) => {
-    const data = d.data() as User;
+    const data = d.data() as Partial<User>;
     return {
-      uid: data.uid,
-      email: data.email,
-      displayName: data.displayName,
-      role: data.role,
-      departmentId: data.departmentId,
-      status: data.status,
-      emailVerified: data.emailVerified,
-      homeWardId: data.homeWardId,
+      uid: data.uid || d.id,
+      email: data.email || "",
+      displayName: data.displayName || data.email?.split("@")[0] || "User",
+      role: (data.role as Role) || "citizen",
+      departmentId: data.departmentId || null,
+      status: data.status || "active",
+      emailVerified: Boolean(data.emailVerified),
+      homeWardId: data.homeWardId || null,
       complaintsFiled: data.stats?.filed || 0,
-      createdAt: data.createdAt,
-      lastSignInAt: data.updatedAt,
+      createdAt: data.createdAt || new Date().toISOString(),
+      lastSignInAt: data.updatedAt || data.createdAt || new Date().toISOString(),
     } as AdminUser;
   });
 

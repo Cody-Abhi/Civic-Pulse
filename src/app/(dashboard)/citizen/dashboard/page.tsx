@@ -12,7 +12,7 @@ import { getSessionUser } from "@/server/auth/session";
 import { listComplaints } from "@/server/services/complaints";
 
 export const metadata = {
-  title: "Citizen Dashboard · CivicPulse AI",
+  title: "Citizen Dashboard",
   description: "Track your reported civic issues, review municipal resolutions, and follow nearby community activity.",
 };
 

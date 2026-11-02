@@ -17,13 +17,21 @@ export async function generateMetadata({
   const complaint = await getComplaint(ref);
   if (!complaint) {
     return {
-      title: "Issue Not Found · CivicPulse AI",
+      title: "Issue Not Found",
+      description: "The requested civic issue record could not be found.",
     };
   }
 
+  const isSynthetic = Boolean(
+    complaint.isSynthetic ||
+    complaint.reporterUid?.startsWith("seed-") ||
+    complaint.reporterUid?.startsWith("demo-")
+  );
+
   return {
-    title: `${complaint.ref} · ${complaint.title} · CivicPulse Public Ledger`,
+    title: `${complaint.ref} · ${complaint.title}`,
     description: `Public priority score ${complaint.priority.score}/100 (${complaint.priority.band}). Location: ${complaint.location.wardName || "Bengaluru"}.`,
+    robots: isSynthetic ? { index: false, follow: false } : { index: true, follow: true },
   };
 }
 

@@ -3,7 +3,7 @@ import { listComplaints } from "@/server/services/complaints";
 import { OpsMapView } from "./ops-map-view";
 
 export const metadata: Metadata = {
-  title: "Operations Dispatch Map · CivicPulse AI",
+  title: "Operations Map",
   description: "Operational MapLibre GL map for BBMP ward dispatch, hotspot clusters, and field crews.",
 };
 

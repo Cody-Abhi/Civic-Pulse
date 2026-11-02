@@ -2,6 +2,8 @@ import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => {
+  test.describe.configure({ mode: "serial" });
+
   test.beforeEach(async ({ page }) => {
     // Inject mock geolocation for Bengaluru Indiranagar
     await page.context().grantPermissions(["geolocation"]);
@@ -13,7 +15,7 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
   }) => {
     // 1. Landing Page (UI-01)
     await page.goto("/", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator("h1").first()).toBeVisible();
 
     // Verify independent prototype disclaimer
     await expect(
@@ -37,7 +39,7 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
 
     // 2. Explore Catalog (UI-05)
     await page.goto("/explore", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator("h1").first()).toBeVisible();
 
     const overflowExplore = await page.evaluate(
       () => document.documentElement.scrollWidth > window.innerWidth,
@@ -64,11 +66,11 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
 
     // Navigate to citizen area
     await page.waitForURL((url) => url.pathname.includes("/citizen"), { timeout: 20000 });
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator("h1").first()).toBeVisible();
 
     // Open complaint wizard
     await page.goto("/citizen/complaints/new", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator("h1").first()).toBeVisible();
 
     // Step 1: Category selection
     const potholeBtn = page.locator("button:has-text('Road pothole')");
@@ -137,11 +139,11 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
     // Navigate to authority queue
     await page.waitForURL((url) => url.pathname.includes("/authority"), { timeout: 20000 });
     await page.goto("/authority/queue", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator("h1").first()).toBeVisible();
 
     // Verify table (desktop) or mobile cards (mobile)
     const hasTable = await page.locator("table").isVisible().catch(() => false);
-    const hasHeader = await page.locator("h1").isVisible();
+    const hasHeader = await page.locator("h1").first().isVisible();
     expect(hasTable || hasHeader).toBe(true);
 
     // Verify 0 horizontal overflow
@@ -171,8 +173,8 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
     await page.waitForURL((url) => url.pathname.includes("/admin"), { timeout: 20000 });
 
     // 1. Admin Audit Logs
-    await page.goto("/admin/audit", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("h1")).toBeVisible();
+    await page.goto("/admin/audit-logs", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("h1").first()).toBeVisible();
 
     const overflowAudit = await page.evaluate(
       () => document.documentElement.scrollWidth > window.innerWidth,
@@ -188,8 +190,8 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
     expect(auditViolations).toEqual([]);
 
     // 2. Admin AI Telemetry
-    await page.goto("/admin/ai", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("h1")).toBeVisible();
+    await page.goto("/admin/ai-monitoring", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("h1").first()).toBeVisible();
 
     const overflowAi = await page.evaluate(
       () => document.documentElement.scrollWidth > window.innerWidth,

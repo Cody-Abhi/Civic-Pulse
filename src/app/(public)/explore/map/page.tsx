@@ -5,7 +5,7 @@ import { MapView } from "./map-view";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Live Bengaluru Civic Map · OpenFreeMap",
+  title: "Live Bengaluru Civic Map",
   description:
     "Interactive MapLibre GL map of Bengaluru civic issues with density clusters and priority-banded points.",
 };

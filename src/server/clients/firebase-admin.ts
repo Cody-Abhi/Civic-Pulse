@@ -51,6 +51,10 @@ export function getAdminFirestore(): Firestore {
     return adminFirestore;
   }
   adminFirestore = getFirestore(getAdminApp());
-  adminFirestore.settings({ ignoreUndefinedProperties: true });
+  try {
+    adminFirestore.settings({ ignoreUndefinedProperties: true });
+  } catch {
+    // Settings may already be configured on this Firestore instance
+  }
   return adminFirestore;
 }

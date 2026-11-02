@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import * as React from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { getComplaints, getWardStats } from "@/server/services/complaints";
 import { getAdminDepartments } from "@/server/services/admin";
 import { AdminAnalyticsClient } from "./admin-analytics-client";
+
+export const metadata: Metadata = {
+  title: "City Performance Analytics",
+  description: "Cross-departmental performance metrics, SLA compliance benchmarks, and ward resolution trends.",
+};
 
 export default async function AdminAnalyticsPage() {
   const complaints = await getComplaints();

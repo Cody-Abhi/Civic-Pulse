@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import * as React from "react";
 import Link from "next/link";
 import { ShieldOff, LogOut, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  title: "Access Denied",
+  description: "You do not have permission to access this resource.",
+  robots: { index: false, follow: false },
+};
 
 interface PageProps {
   searchParams: Promise<{ reason?: string }>;

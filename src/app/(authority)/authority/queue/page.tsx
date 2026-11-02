@@ -3,7 +3,7 @@ import { listComplaints } from "@/server/services/complaints";
 import { QueueView } from "./queue-view";
 
 export const metadata: Metadata = {
-  title: "Priority Queue · Engineering Operations",
+  title: "Priority Queue",
   description: "Ranked operational queue for municipal engineers with 7-factor priority scores.",
 };
 

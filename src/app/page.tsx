@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   Cpu,
@@ -19,6 +20,12 @@ import { MetricStrip } from "@/components/data/metric-strip";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { getCityMetrics } from "@/server/repositories/metrics.repo";
 import type { PriorityResult } from "@/domain/types";
+
+export const metadata: Metadata = {
+  title: "AI-Powered Civic Action Platform",
+  description:
+    "CivicPulse AI turns free-text civic complaints into structured, located, prioritised records with transparent 7-factor priority receipts and real-time municipal routing.",
+};
 
 // Realistic demonstration receipt for UI-01 Hero (§29.5)
 const DEMO_RECEIPT: PriorityResult = {

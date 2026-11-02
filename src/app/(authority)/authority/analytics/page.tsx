@@ -14,7 +14,7 @@ import { AIInsightsPanel } from "@/components/ai/ai-insights-panel";
 import { listComplaints } from "@/server/services/complaints";
 
 export const metadata: Metadata = {
-  title: "Department Operational Analytics · CivicPulse AI",
+  title: "Department Analytics",
   description: "KPIs, SLA compliance rates, and resolution turnaround times across Bengaluru wards.",
 };
 

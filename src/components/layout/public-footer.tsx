@@ -10,8 +10,7 @@ export function PublicFooter() {
           {/* Brand & Mission */}
           <div className="flex flex-col gap-3 md:col-span-2">
             <Link href="/" className="flex items-center gap-2">
-              <CivicPulseLogo size="sm" showTagline={false} />
-              <span className="font-bold tracking-tight text-ink">CivicPulse AI</span>
+              <CivicPulseLogo size="sm" variant="dark" showTagline={false} />
             </Link>
             <p className="max-w-[48ch] text-xs leading-relaxed text-muted">
               Turning citizen voices into intelligent city action. An independent civic-tech

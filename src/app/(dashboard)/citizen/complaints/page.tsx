@@ -8,7 +8,7 @@ import { listComplaints } from "@/server/services/complaints";
 import { ComplaintsListView } from "./complaints-list-view";
 
 export const metadata = {
-  title: "My Reports · CivicPulse AI",
+  title: "My Reports",
   description: "Review, filter, and track all your submitted civic reports and their municipal resolution progress.",
 };
 
