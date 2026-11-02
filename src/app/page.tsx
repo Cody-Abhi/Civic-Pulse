@@ -18,8 +18,18 @@ import { PublicFooter } from "@/components/layout/public-footer";
 import { PriorityReceipt } from "@/components/ai/priority-receipt";
 import { MetricStrip } from "@/components/data/metric-strip";
 import { DemoBadge } from "@/components/ui/demo-badge";
-import { getCityMetrics } from "@/server/repositories/metrics.repo";
+import {
+  getCityMetrics,
+  DEFAULT_CITY_METRICS,
+  type CityMetricsTotals,
+} from "@/server/repositories/metrics.repo";
 import type { PriorityResult } from "@/domain/types";
+
+/**
+ * Dynamic revalidation interval for public landing page (PRD §UI-01, §36.1, PRD-NFR-001).
+ * Incremental Static Regeneration (ISR) every 300 seconds (5 minutes).
+ */
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "AI-Powered Civic Action Platform",
@@ -57,12 +67,22 @@ const DEMO_RECEIPT: PriorityResult = {
 };
 
 export default async function HomePage() {
-  const metrics = await getCityMetrics();
-  const bbmpCount = metrics.openByDepartment["ROADS"] || 128;
-  const bescomCount = metrics.openByDepartment["BESCOM"] || 42;
-  const bwssbCount = metrics.openByDepartment["BWSSB"] || 76;
-  const ward150Count = metrics.openByWard["ward-150"] || 94;
-  const ward174Count = metrics.openByWard["ward-174"] || 88;
+  let metrics: CityMetricsTotals;
+  try {
+    metrics = await getCityMetrics();
+  } catch (error) {
+    console.warn(
+      "[HomePage] Error fetching cityMetrics/totals during prerender/render, using fallback defaults:",
+      error instanceof Error ? error.message : error
+    );
+    metrics = DEFAULT_CITY_METRICS;
+  }
+
+  const bbmpCount = metrics.openByDepartment?.["ROADS"] ?? 128;
+  const bescomCount = metrics.openByDepartment?.["BESCOM"] ?? 42;
+  const bwssbCount = metrics.openByDepartment?.["BWSSB"] ?? 76;
+  const ward150Count = metrics.openByWard?.["ward-150"] ?? 94;
+  const ward174Count = metrics.openByWard?.["ward-174"] ?? 88;
   const avgSla = (metrics.avgResolutionHours || 22.4).toFixed(1);
 
   return (
