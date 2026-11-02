@@ -430,6 +430,7 @@ describe("CIVICPULSE Integration Tests (PRD-TEST-INT-001…013, §39.2)", () => 
         "Content-Type": "application/json",
         Origin: "http://localhost:3000",
       },
+      body: JSON.stringify({ confirmation: "RESET DEMO" }),
     });
 
     const res = await demoResetPost(req);
