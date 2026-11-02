@@ -30,13 +30,6 @@ const DEFAULT_DEMO_ACCOUNTS: DemoAccount[] = [
     label: "Roads Authority Demo",
     description: "Manage priority queue, live operations map & SLAs",
   },
-  {
-    role: "admin",
-    email: "admin@demo.civicpulse.invalid",
-    password: "CivicPulseDemo2026!",
-    label: "City Admin Demo",
-    description: "System governance, AI monitoring, audit logs & weights",
-  },
 ];
 
 interface DemoAccountPanelProps {

@@ -5,6 +5,13 @@ import type { Role } from "@/domain/schemas";
 import { getSessionUser, type SessionUser } from "@/server/auth/session";
 import { getServerEnv } from "@/lib/server-env";
 
+function getReqUrl(req: NextRequest | Request): URL {
+  if ("nextUrl" in req && req.nextUrl) {
+    return req.nextUrl;
+  }
+  return new URL(req.url, "http://localhost:3000");
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -84,7 +91,7 @@ export function withApi<TBody = unknown, TParams = Record<string, string>>(
             env.APP_URL,
             `http://${host}`,
             `https://${host}`,
-            req.nextUrl.origin,
+            getReqUrl(req).origin,
           ].filter(Boolean);
 
           const isAllowed = allowedOrigins.some(
@@ -211,7 +218,7 @@ export function withApi<TBody = unknown, TParams = Record<string, string>>(
       logRequest({
         ts: new Date().toISOString(),
         requestId,
-        route: req.nextUrl.pathname,
+        route: getReqUrl(req).pathname,
         method: req.method,
         uid: user?.uid,
         role: user?.role,
@@ -225,7 +232,7 @@ export function withApi<TBody = unknown, TParams = Record<string, string>>(
         logRequest({
           ts: new Date().toISOString(),
           requestId,
-          route: req.nextUrl.pathname,
+          route: getReqUrl(req).pathname,
           method: req.method,
           uid: user?.uid,
           role: user?.role,
@@ -255,7 +262,7 @@ export function withApi<TBody = unknown, TParams = Record<string, string>>(
         logRequest({
           ts: new Date().toISOString(),
           requestId,
-          route: req.nextUrl.pathname,
+          route: getReqUrl(req).pathname,
           method: req.method,
           uid: user?.uid,
           role: user?.role,
@@ -277,7 +284,7 @@ export function withApi<TBody = unknown, TParams = Record<string, string>>(
       logRequest({
         ts: new Date().toISOString(),
         requestId,
-        route: req.nextUrl.pathname,
+        route: getReqUrl(req).pathname,
         method: req.method,
         uid: user?.uid,
         role: user?.role,

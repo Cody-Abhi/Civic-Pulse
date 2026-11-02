@@ -31,13 +31,6 @@ export const GET = withApi(
           label: "Roads Authority Demo",
           description: "Manage priority queue, operations map, department SLAs",
         },
-        {
-          role: "admin",
-          email: env.DEMO_ADMIN_EMAIL,
-          password: env.DEMO_PASSWORD,
-          label: "City Admin Demo",
-          description: "System governance, AI metrics, audit logs, priority weights",
-        },
       ],
     });
   },

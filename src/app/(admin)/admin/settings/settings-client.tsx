@@ -177,7 +177,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
     setFeedback(null);
 
     try {
-      const res = await fetch("/api/admin/demo/reset", { method: "POST" });
+      const res = await fetch("/api/admin/demo/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation: resetConfirmText }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Demo reset failed");
 
