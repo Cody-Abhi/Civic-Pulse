@@ -28,7 +28,14 @@ const DEFAULT_DEMO_ACCOUNTS: DemoAccount[] = [
     email: "roads@demo.civicpulse.invalid",
     password: "CivicPulseDemo2026!",
     label: "Roads Authority Demo",
-    description: "Manage priority queue, live operations map & SLAs",
+    description: "Manage priority queue, live operations map & SLAs (Roads)",
+  },
+  {
+    role: "authority",
+    email: "drainage@demo.civicpulse.invalid",
+    password: "CivicPulseDemo2026!",
+    label: "Drainage Authority Demo",
+    description: "Triage stormwater drains, flood hazards & culvert repairs",
   },
 ];
 
@@ -42,7 +49,7 @@ export function DemoAccountPanel({ className }: DemoAccountPanelProps) {
   const nextParam = searchParams?.get("next");
 
   const [accounts, setAccounts] = React.useState<DemoAccount[]>(DEFAULT_DEMO_ACCOUNTS);
-  const [loadingRole, setLoadingRole] = React.useState<string | null>(null);
+  const [loadingEmail, setLoadingEmail] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -61,9 +68,9 @@ export function DemoAccountPanel({ className }: DemoAccountPanelProps) {
   }, []);
 
   const handleSelectAccount = async (account: DemoAccount) => {
-    if (loadingRole) return;
+    if (loadingEmail) return;
     setError(null);
-    setLoadingRole(account.role);
+    setLoadingEmail(account.email);
 
     try {
       const password = account.password || "CivicPulseDemo2026!";
@@ -71,7 +78,7 @@ export function DemoAccountPanel({ className }: DemoAccountPanelProps) {
       router.replace(session.home);
     } catch (err) {
       setError(mapAuthError(err));
-      setLoadingRole(null);
+      setLoadingEmail(null);
     }
   };
 
@@ -121,15 +128,15 @@ export function DemoAccountPanel({ className }: DemoAccountPanelProps) {
 
       <div className="flex flex-col gap-2">
         {accounts.map((acc) => {
-          const isLoading = loadingRole === acc.role;
+          const isLoading = loadingEmail === acc.email;
           const RoleIcon = getRoleIcon(acc.role);
 
           return (
             <button
-              key={acc.role}
+              key={acc.email}
               type="button"
               onClick={() => handleSelectAccount(acc)}
-              disabled={Boolean(loadingRole)}
+              disabled={Boolean(loadingEmail)}
               className={cn(
                 "group relative flex items-center justify-between rounded-lg border border-white/10 bg-white/10 px-3.5 py-2.5 text-left transition-all duration-200",
                 "hover:border-primary/50 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-primary/40",
@@ -164,4 +171,3 @@ export function DemoAccountPanel({ className }: DemoAccountPanelProps) {
     </div>
   );
 }
-

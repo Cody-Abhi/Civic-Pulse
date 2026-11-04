@@ -13,6 +13,7 @@ import {
   LayoutGrid,
   ListFilter,
   CheckCircle2,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -23,19 +24,24 @@ import { DemoBadge } from "@/components/ui/demo-badge";
 import { DataTable } from "@/components/data/data-table";
 import type { ColumnDef } from "@/components/data/data-table.types";
 import type { Complaint, ComplaintStatus } from "@/domain/types";
+import { getDepartmentName } from "@/domain/departments";
 
 interface QueueViewProps {
   initialComplaints: Complaint[];
+  currentUserDepartmentId?: string | null;
+  currentUserRole?: "citizen" | "authority" | "admin";
 }
 
 const CATEGORIES = [
   { key: "ALL", label: "All categories" },
-  { key: "ROADS", label: "Roads & Footpaths" },
-  { key: "DRAINAGE", label: "Drainage & Sewage" },
-  { key: "STREETLIGHT", label: "Streetlights" },
-  { key: "WASTE", label: "Garbage & Waste" },
-  { key: "WATER", label: "Water supply" },
-  { key: "TRAFFIC", label: "Traffic signals" },
+  { key: "POTHOLE", label: "Potholes & Road Damage" },
+  { key: "INFRASTRUCTURE", label: "Footpaths & Infrastructure" },
+  { key: "DRAINAGE", label: "Drainage & Stormwater" },
+  { key: "GARBAGE", label: "Garbage & Waste" },
+  { key: "STREETLIGHT", label: "Streetlights & Electrical" },
+  { key: "WATER_LEAK", label: "Water Supply & Leaks" },
+  { key: "SANITATION", label: "Sanitation & Public Health" },
+  { key: "OTHER", label: "Other Civic Issues" },
 ];
 
 const WARDS = [
@@ -58,7 +64,11 @@ const STATUS_TABS: { key: string; label: string }[] = [
   { key: "CLOSED", label: "Closed" },
 ];
 
-export function QueueView({ initialComplaints }: QueueViewProps) {
+export function QueueView({
+  initialComplaints,
+  currentUserDepartmentId,
+  currentUserRole,
+}: QueueViewProps) {
   const router = useRouter();
   const [complaints] = React.useState<Complaint[]>(initialComplaints);
   const [search, setSearch] = React.useState("");
@@ -148,7 +158,7 @@ export function QueueView({ initialComplaints }: QueueViewProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ids: selectedIds,
-          targetStatus: bulkStatus,
+          to: bulkStatus,
           note: `Bulk transitioned to ${bulkStatus} by municipal supervisor`,
         }),
       });
@@ -157,7 +167,8 @@ export function QueueView({ initialComplaints }: QueueViewProps) {
         throw new Error(err?.error?.message || "Bulk transition failed.");
       }
       const data = await res.json();
-      setBulkFeedback(`Successfully updated ${data.data.transitionedCount} complaints.`);
+      const updatedCount = data.updated ?? selectedIds.length;
+      setBulkFeedback(`Successfully updated ${updatedCount} complaints.`);
       setSelectedIds([]);
       setTimeout(() => {
         setBulkFeedback(null);
@@ -287,11 +298,22 @@ export function QueueView({ initialComplaints }: QueueViewProps) {
       {/* ── Page Header ── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
               Priority Operational Queue
             </h1>
             <DemoBadge />
+            {currentUserDepartmentId && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                <Icon icon={Building2} size={12} />
+                <span>{getDepartmentName(currentUserDepartmentId)}</span>
+              </span>
+            )}
+            {currentUserRole === "admin" && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-purple-300 bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-800">
+                <span>All Departments (Admin Mode)</span>
+              </span>
+            )}
           </div>
           <p className="text-xs text-ink-secondary sm:text-sm">
             Ranked deterministically by 7-factor civic priority engine. Higher score tickets appear first.

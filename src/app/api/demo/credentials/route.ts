@@ -29,7 +29,14 @@ export const GET = withApi(
           email: env.DEMO_AUTHORITY_EMAIL,
           password: env.DEMO_PASSWORD,
           label: "Roads Authority Demo",
-          description: "Manage priority queue, operations map, department SLAs",
+          description: "Manage priority queue, operations map, department SLAs (Roads)",
+        },
+        {
+          role: "authority",
+          email: "drainage@demo.civicpulse.invalid",
+          password: env.DEMO_PASSWORD,
+          label: "Drainage Authority Demo",
+          description: "Triage stormwater drains, flood hazards & culvert repairs",
         },
       ],
     });

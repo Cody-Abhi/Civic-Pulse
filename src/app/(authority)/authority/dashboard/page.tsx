@@ -8,6 +8,7 @@ import {
   FileText,
   BarChart3,
   Sparkles,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -18,6 +19,10 @@ import { PriorityBadge } from "@/components/ui/priority-badge";
 import { ReferenceChip } from "@/components/ui/reference-chip";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { listComplaints, getCityMetrics } from "@/server/services/complaints";
+import { requireRole } from "@/server/auth/require-role";
+import { getDepartmentName } from "@/domain/departments";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Authority Dashboard",
@@ -25,13 +30,18 @@ export const metadata: Metadata = {
 };
 
 export default async function AuthorityDashboardPage() {
+  const user = await requireRole(["authority", "admin"]);
+  const departmentId = user.role === "admin" ? undefined : (user.departmentId || "roads");
+
   const [cityMetrics, urgentComplaints] = await Promise.all([
     getCityMetrics(),
-    listComplaints({ limit: 6, status: "OPEN_ALL" }),
+    listComplaints({ limit: 6, status: "OPEN_ALL", departmentId }),
   ]);
 
   // Operational metrics from aggregate cityMetrics
-  const activeQueueCount = cityMetrics.open;
+  const activeQueueCount = departmentId
+    ? cityMetrics.openByDepartment?.[departmentId] ?? cityMetrics.open
+    : cityMetrics.open;
   const criticalCount = cityMetrics.criticalComplaints || (cityMetrics.openByBand?.CRITICAL ?? 0);
   const overdueCount = Math.round(activeQueueCount * 0.15);
   const resolvedCount = cityMetrics.resolvedComplaints;
@@ -41,7 +51,7 @@ export default async function AuthorityDashboardPage() {
       {/* ── Page Header ── */}
       <PageHeader
         title="Engineering Operations Command"
-        description="Assigned municipal queue for Bengaluru East & South wards. Triage, dispatch, and track SLA compliance."
+        description="Assigned municipal queue for Bengaluru wards. Triage, dispatch, and track SLA compliance."
         meta={
           <>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-semibold text-muted">
@@ -49,6 +59,12 @@ export default async function AuthorityDashboardPage() {
               Live Operations
             </span>
             <DemoBadge />
+            {departmentId && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                <Icon icon={Building2} size={12} />
+                <span>{getDepartmentName(departmentId)}</span>
+              </span>
+            )}
           </>
         }
         actions={
@@ -106,45 +122,51 @@ export default async function AuthorityDashboardPage() {
                 <h2 className="text-base font-bold text-ink">Urgent Attention Queue</h2>
               </div>
               <Link href="/authority/queue" className="text-xs font-semibold text-primary hover:underline">
-                View all ({criticalCount})
+                View all ({urgentComplaints.length})
               </Link>
             </div>
 
             <div className="flex flex-col divide-y divide-border/60">
-              {urgentComplaints.slice(0, 6).map((c) => (
-                <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3.5">
-                  <div className="flex flex-col gap-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <ReferenceChip reference={c.ref} />
-                      <PriorityBadge band={c.priority.band} score={c.priority.score} size="sm" />
-                      <StatusBadge status={c.status} size="sm" />
-                    </div>
-                    <Link
-                      href={`/authority/complaints/${c.id}`}
-                      className="text-sm font-bold text-ink hover:text-primary transition-colors truncate"
-                    >
-                      {c.title}
-                    </Link>
-                    <div className="flex items-center gap-3 text-xs text-muted">
-                      <span>{c.location.wardName || "Bengaluru Ward"}</span>
-                      <span>•</span>
-                      <span>{c.category}</span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1 text-danger font-semibold">
-                        <Icon icon={Clock} size={12} />
-                        <span>SLA: &lt; 24h</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <Link href={`/authority/complaints/${c.id}`} className="shrink-0">
-                    <Button size="sm" variant="outline" className="h-8 gap-1 text-xs font-semibold">
-                      <span>Workspace</span>
-                      <Icon icon={ArrowRight} size={12} />
-                    </Button>
-                  </Link>
+              {urgentComplaints.length === 0 ? (
+                <div className="py-8 text-center text-xs text-muted">
+                  No urgent complaints pending for your department.
                 </div>
-              ))}
+              ) : (
+                urgentComplaints.slice(0, 6).map((c) => (
+                  <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3.5">
+                    <div className="flex flex-col gap-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <ReferenceChip reference={c.ref} />
+                        <PriorityBadge band={c.priority.band} score={c.priority.score} size="sm" />
+                        <StatusBadge status={c.status} size="sm" />
+                      </div>
+                      <Link
+                        href={`/authority/complaints/${c.id}`}
+                        className="text-sm font-bold text-ink hover:text-primary transition-colors truncate"
+                      >
+                        {c.title}
+                      </Link>
+                      <div className="flex items-center gap-3 text-xs text-muted">
+                        <span>{c.location.wardName || "Bengaluru Ward"}</span>
+                        <span>•</span>
+                        <span>{c.category}</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1 text-danger font-semibold">
+                          <Icon icon={Clock} size={12} />
+                          <span>SLA: &lt; 24h</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <Link href={`/authority/complaints/${c.id}`} className="shrink-0">
+                      <Button size="sm" variant="outline" className="h-8 gap-1 text-xs font-semibold">
+                        <span>Workspace</span>
+                        <Icon icon={ArrowRight} size={12} />
+                      </Button>
+                    </Link>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -218,7 +240,9 @@ export default async function AuthorityDashboardPage() {
             <div className="flex flex-col gap-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-ink font-medium">Roads &amp; Footpaths</span>
-                <span className="font-bold text-ink">48 active</span>
+                <span className="font-bold text-ink">
+                  {cityMetrics.openByDepartment?.roads ?? 48} active
+                </span>
               </div>
               <div className="h-1.5 w-full rounded-full bg-surface-subtle overflow-hidden">
                 <div className="h-full bg-primary" style={{ width: "45%" }} />
@@ -226,7 +250,9 @@ export default async function AuthorityDashboardPage() {
 
               <div className="flex items-center justify-between mt-1">
                 <span className="text-ink font-medium">Drainage &amp; Sewage</span>
-                <span className="font-bold text-ink">28 active</span>
+                <span className="font-bold text-ink">
+                  {cityMetrics.openByDepartment?.drainage ?? 28} active
+                </span>
               </div>
               <div className="h-1.5 w-full rounded-full bg-surface-subtle overflow-hidden">
                 <div className="h-full bg-primary" style={{ width: "26%" }} />
@@ -234,7 +260,9 @@ export default async function AuthorityDashboardPage() {
 
               <div className="flex items-center justify-between mt-1">
                 <span className="text-ink font-medium">Streetlights</span>
-                <span className="font-bold text-ink">22 active</span>
+                <span className="font-bold text-ink">
+                  {cityMetrics.openByDepartment?.electrical ?? 22} active
+                </span>
               </div>
               <div className="h-1.5 w-full rounded-full bg-surface-subtle overflow-hidden">
                 <div className="h-full bg-primary" style={{ width: "20%" }} />

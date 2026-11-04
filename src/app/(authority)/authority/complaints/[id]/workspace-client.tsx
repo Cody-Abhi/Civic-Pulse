@@ -15,6 +15,9 @@ import {
   Sparkles,
   User,
   ThumbsUp,
+  AlertCircle,
+  ShieldAlert,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -24,19 +27,38 @@ import { ReferenceChip } from "@/components/ui/reference-chip";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { PriorityReceipt } from "@/components/ai/priority-receipt";
 import { AIAnalysisCard } from "@/components/ai/ai-analysis-card";
-import type { Complaint, ComplaintStatus, RejectReason, ComplaintActivity } from "@/domain/types";
+import type { Complaint, ComplaintStatus, RejectReason, ComplaintActivity, Role } from "@/domain/types";
+import { getDepartmentName } from "@/domain/departments";
 
 interface WorkspaceClientProps {
   complaint: Complaint;
   initialActivities: ComplaintActivity[];
+  currentUserRole?: Role;
+  currentUserDepartmentId?: string | null;
 }
 
 export function WorkspaceClient({
   complaint: initialComplaint,
   initialActivities,
+  currentUserRole = "authority",
+  currentUserDepartmentId = null,
 }: WorkspaceClientProps) {
   const [complaint, setComplaint] = React.useState<Complaint>(initialComplaint);
   const [activities, setActivities] = React.useState<ComplaintActivity[]>(initialActivities);
+
+  // Department ownership check (PRD §21.2)
+  const isOwningDepartment =
+    currentUserRole === "admin" ||
+    (currentUserRole === "authority" &&
+      Boolean(
+        currentUserDepartmentId &&
+          complaint.departmentId &&
+          currentUserDepartmentId.toLowerCase() === complaint.departmentId.toLowerCase(),
+      ));
+
+  // Feedback states
+  const [actionError, setActionError] = React.useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = React.useState<string | null>(null);
 
   // Status transition states
   const [statusLoading, setStatusLoading] = React.useState(false);
@@ -62,7 +84,14 @@ export function WorkspaceClient({
     targetStatus: ComplaintStatus,
     payload?: { resolutionNote?: string | undefined; rejectReason?: RejectReason | undefined; note?: string | undefined },
   ) => {
+    if (!isOwningDepartment) {
+      setActionError("Cannot modify status of a complaint assigned to another department.");
+      return;
+    }
+
+    setActionError(null);
     setStatusLoading(true);
+
     try {
       const res = await fetch(`/api/complaints/${complaint.id}/status`, {
         method: "PATCH",
@@ -74,28 +103,39 @@ export function WorkspaceClient({
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setComplaint(data.complaint);
-        setResolveModalOpen(false);
-        setRejectModalOpen(false);
-        // Add activity
-        const newAct: ComplaintActivity = {
-          id: `act-${Date.now()}`,
-          complaintId: complaint.id,
-          actorUid: "authority-agent",
-          actorName: "Municipal Engineer",
-          actorRole: "authority",
-          action: `STATUS_CHANGED_${targetStatus}`,
-          note: payload?.resolutionNote || payload?.note || undefined,
-          createdAt: new Date().toISOString(),
-          visibleToReporter: true,
-          departmentId: complaint.departmentId,
-        };
-        setActivities((prev) => [newAct, ...prev]);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        const msg =
+          errorData?.error?.message ||
+          errorData?.message ||
+          `Failed to update status (${res.status})`;
+        setActionError(msg);
+        return;
       }
+
+      const data = await res.json();
+      setComplaint(data.complaint);
+      setResolveModalOpen(false);
+      setRejectModalOpen(false);
+      setActionSuccess(`Status successfully transitioned to ${targetStatus}`);
+      setTimeout(() => setActionSuccess(null), 4000);
+
+      // Add activity
+      const newAct: ComplaintActivity = {
+        id: `act-${Date.now()}`,
+        complaintId: complaint.id,
+        actorUid: "authority-agent",
+        actorName: "Municipal Engineer",
+        actorRole: "authority",
+        action: `STATUS_CHANGED_${targetStatus}`,
+        note: payload?.resolutionNote || payload?.note || undefined,
+        createdAt: new Date().toISOString(),
+        visibleToReporter: true,
+        departmentId: complaint.departmentId,
+      };
+      setActivities((prev) => [newAct, ...prev]);
     } catch (err) {
-      console.warn("Status change error:", err);
+      setActionError(err instanceof Error ? err.message : "Network error updating status");
     } finally {
       setStatusLoading(false);
     }
@@ -103,9 +143,15 @@ export function WorkspaceClient({
 
   const handleAdjustPriority = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isOwningDepartment) {
+      setActionError("Priority overrides are restricted to assigned department supervisors.");
+      return;
+    }
     if (!rationale.trim() || adjusting) return;
+
     setAdjusting(true);
     setAdjustSuccess(false);
+    setActionError(null);
 
     try {
       const res = await fetch(`/api/complaints/${complaint.id}/priority`, {
@@ -117,56 +163,95 @@ export function WorkspaceClient({
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setComplaint(data.complaint);
-        setAdjustSuccess(true);
-        setTimeout(() => setAdjustSuccess(false), 3000);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        setActionError(errData?.error?.message || "Failed to adjust priority.");
+        return;
       }
+
+      const data = await res.json();
+      setComplaint(data.complaint);
+      setAdjustSuccess(true);
+      setActionSuccess("Priority override applied.");
+      setTimeout(() => {
+        setAdjustSuccess(false);
+        setActionSuccess(null);
+      }, 4000);
     } catch (err) {
-      console.warn("Priority adjust error:", err);
+      setActionError(err instanceof Error ? err.message : "Failed to adjust priority.");
     } finally {
       setAdjusting(false);
     }
   };
 
-  const handleAddNote = (e: React.FormEvent) => {
+  const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isOwningDepartment) {
+      setActionError("Internal engineer notes are restricted to assigned department personnel.");
+      return;
+    }
     if (!newNote.trim() || notePosting) return;
-    setNotePosting(true);
 
-    const act: ComplaintActivity = {
-      id: `act-${Date.now()}`,
-      complaintId: complaint.id,
-      actorUid: "authority-agent",
-      actorName: "Municipal Engineer",
-      actorRole: "authority",
-      action: "ENGINEER_NOTE",
-      note: newNote.trim(),
-      createdAt: new Date().toISOString(),
-      visibleToReporter: false,
-      departmentId: complaint.departmentId,
-    };
-    setActivities((prev) => [act, ...prev]);
-    setNewNote("");
-    setNotePosting(false);
+    setNotePosting(true);
+    setActionError(null);
+
+    try {
+      const res = await fetch(`/api/complaints/${complaint.id}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          note: newNote.trim(),
+          visibleToReporter: false,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        setActionError(errData?.error?.message || "Failed to record engineer note.");
+        return;
+      }
+
+      const data = await res.json();
+      setActivities((prev) => [data.activity, ...prev]);
+      setNewNote("");
+      setActionSuccess("Internal engineer note saved.");
+      setTimeout(() => setActionSuccess(null), 3000);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Network error posting note");
+    } finally {
+      setNotePosting(false);
+    }
   };
 
   const handleVerifiedSeverityChange = async (sev: number) => {
+    if (!isOwningDepartment) {
+      setActionError("Verified severity overrides are restricted to assigned department personnel.");
+      return;
+    }
+
+    setActionError(null);
+
     try {
       const res = await fetch(`/api/complaints/${complaint.id}/priority`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ verifiedSeverity: sev }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.complaint) {
-          setComplaint(data.complaint);
-        }
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        setActionError(errData?.error?.message || "Failed to update verified severity.");
+        return;
+      }
+
+      const data = await res.json();
+      if (data.complaint) {
+        setComplaint(data.complaint);
+        setActionSuccess(`Authority verified severity updated to level ${sev}/5.`);
+        setTimeout(() => setActionSuccess(null), 3000);
       }
     } catch (err) {
-      console.error("Failed to update verified severity:", err);
+      setActionError(err instanceof Error ? err.message : "Failed to update verified severity.");
     }
   };
 
@@ -174,7 +259,7 @@ export function WorkspaceClient({
     <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1360px] mx-auto w-full">
       {/* ── Top Bar ── */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Link
             href="/authority/queue"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-ink transition-colors"
@@ -185,6 +270,12 @@ export function WorkspaceClient({
           <span className="text-muted">/</span>
           <ReferenceChip reference={complaint.ref} />
           <DemoBadge />
+          {complaint.departmentId && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-semibold text-muted">
+              <Icon icon={Building2} size={12} />
+              <span>{getDepartmentName(complaint.departmentId)}</span>
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -196,6 +287,74 @@ export function WorkspaceClient({
           />
         </div>
       </div>
+
+      {/* ── Out-of-Department Boundary Alert Banner (§21.2) ── */}
+      {!isOwningDepartment && (
+        <div
+          role="status"
+          className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
+        >
+          <div className="flex items-start gap-2.5">
+            <Icon icon={ShieldAlert} size={18} className="text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold block text-sm text-amber-950">
+                Department Boundary Notice · Read-Only Mode
+              </span>
+              <p className="mt-0.5 text-amber-900/90 leading-relaxed">
+                This complaint is assigned to <strong>{complaint.departmentName || getDepartmentName(complaint.departmentId)}</strong>.
+                {currentUserDepartmentId && (
+                  <> You are currently authenticated as an officer of <strong>{getDepartmentName(currentUserDepartmentId)}</strong>.</>
+                )}{" "}
+                Triage actions, status transitions, and priority overrides are restricted to assigned department engineers and administrators.
+              </p>
+            </div>
+          </div>
+          <Link href="/authority/queue">
+            <Button size="sm" variant="outline" className="h-8 text-xs font-semibold shrink-0 border-amber-500/40 bg-white/80 hover:bg-white text-amber-950">
+              Back to my queue
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {/* ── Action Feedback Banners ── */}
+      {actionError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-danger/30 bg-danger/10 p-3.5 text-xs text-danger flex items-center justify-between gap-2 shadow-xs"
+        >
+          <div className="flex items-center gap-2">
+            <Icon icon={AlertCircle} size={16} className="shrink-0" />
+            <span>{actionError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            className="text-xs font-bold hover:underline shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {actionSuccess && (
+        <div
+          role="status"
+          className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-800 flex items-center justify-between gap-2 shadow-xs"
+        >
+          <div className="flex items-center gap-2">
+            <Icon icon={CheckCircle2} size={16} className="shrink-0 text-emerald-600" />
+            <span>{actionSuccess}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActionSuccess(null)}
+            className="text-xs font-bold hover:underline shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* ── 8/4 Grid Layout ── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
@@ -271,7 +430,7 @@ export function WorkspaceClient({
             variant="full"
             source={complaint.aiStatus === "fallback" ? "fallback" : "gemini"}
             verifiedSeverity={complaint.verifiedSeverity}
-            onSeverityChange={handleVerifiedSeverityChange}
+            onSeverityChange={isOwningDepartment ? handleVerifiedSeverityChange : undefined}
             analysis={{
               predictedCategory: complaint.category,
               shortSummary: complaint.title,
@@ -279,7 +438,7 @@ export function WorkspaceClient({
               detectedIssue: complaint.title,
               suggestedSeverity: (complaint.verifiedSeverity || 3) as 1 | 2 | 3 | 4 | 5,
               confidence: complaint.aiConfidence || 0.88,
-              recommendedDepartment: complaint.departmentName || "ROADS",
+              recommendedDepartment: complaint.departmentName || getDepartmentName(complaint.departmentId),
               reasoning: `Categorised as ${complaint.category.replace(/_/g, " ")}. Severity level contributes 0.25 to the transparent deterministic Priority Receipt.`,
               possibleDuplicateIndicators: [complaint.location.landmark || "Bengaluru"],
             }}
@@ -291,78 +450,87 @@ export function WorkspaceClient({
               Triage &amp; Resolution Actions
             </h2>
 
-            <div className="flex flex-wrap items-center gap-2.5">
-              {complaint.status === "SUBMITTED" && (
-                <Button
-                  size="sm"
-                  onClick={() => handleStatusChange("UNDER_REVIEW")}
-                  disabled={statusLoading}
-                  className="gap-1.5 text-xs font-semibold"
-                >
-                  <Icon icon={Clock} size={14} />
-                  <span>Mark Under Review</span>
-                </Button>
-              )}
+            {!isOwningDepartment ? (
+              <div className="rounded-lg border border-border bg-surface-subtle p-3.5 text-xs text-muted flex items-center gap-2">
+                <Icon icon={AlertCircle} size={15} className="text-muted shrink-0" />
+                <span>
+                  Status transitions locked. This complaint is assigned to <strong>{getDepartmentName(complaint.departmentId)}</strong>.
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2.5">
+                {complaint.status === "SUBMITTED" && (
+                  <Button
+                    size="sm"
+                    onClick={() => handleStatusChange("UNDER_REVIEW")}
+                    disabled={statusLoading}
+                    className="gap-1.5 text-xs font-semibold"
+                  >
+                    {statusLoading ? <Icon icon={Loader2} size={14} className="animate-spin" /> : <Icon icon={Clock} size={14} />}
+                    <span>Mark Under Review</span>
+                  </Button>
+                )}
 
-              {complaint.status === "UNDER_REVIEW" && (
-                <Button
-                  size="sm"
-                  onClick={() => handleStatusChange("ASSIGNED")}
-                  disabled={statusLoading}
-                  className="gap-1.5 text-xs font-semibold shadow-xs"
-                >
-                  <Icon icon={Building2} size={14} />
-                  <span>Assign to Field Crew</span>
-                </Button>
-              )}
+                {complaint.status === "UNDER_REVIEW" && (
+                  <Button
+                    size="sm"
+                    onClick={() => handleStatusChange("ASSIGNED")}
+                    disabled={statusLoading}
+                    className="gap-1.5 text-xs font-semibold shadow-xs"
+                  >
+                    {statusLoading ? <Icon icon={Loader2} size={14} className="animate-spin" /> : <Icon icon={Building2} size={14} />}
+                    <span>Assign to Field Crew</span>
+                  </Button>
+                )}
 
-              {complaint.status === "ASSIGNED" && (
-                <Button
-                  size="sm"
-                  onClick={() => handleStatusChange("IN_PROGRESS")}
-                  disabled={statusLoading}
-                  className="gap-1.5 text-xs font-semibold shadow-xs"
-                >
-                  <Icon icon={Building2} size={14} />
-                  <span>Start Field Investigation</span>
-                </Button>
-              )}
+                {complaint.status === "ASSIGNED" && (
+                  <Button
+                    size="sm"
+                    onClick={() => handleStatusChange("IN_PROGRESS")}
+                    disabled={statusLoading}
+                    className="gap-1.5 text-xs font-semibold shadow-xs"
+                  >
+                    {statusLoading ? <Icon icon={Loader2} size={14} className="animate-spin" /> : <Icon icon={Building2} size={14} />}
+                    <span>Start Field Investigation</span>
+                  </Button>
+                )}
 
-              {complaint.status === "IN_PROGRESS" && (
-                <Button
-                  size="sm"
-                  onClick={() => setResolveModalOpen(true)}
-                  disabled={statusLoading}
-                  className="gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-                >
-                  <Icon icon={CheckCircle2} size={14} />
-                  <span>Mark Resolved</span>
-                </Button>
-              )}
+                {complaint.status === "IN_PROGRESS" && (
+                  <Button
+                    size="sm"
+                    onClick={() => setResolveModalOpen(true)}
+                    disabled={statusLoading}
+                    className="gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                  >
+                    <Icon icon={CheckCircle2} size={14} />
+                    <span>Mark Resolved</span>
+                  </Button>
+                )}
 
-              {complaint.status !== "RESOLVED" && complaint.status !== "CLOSED" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setRejectModalOpen(true)}
-                  disabled={statusLoading}
-                  className="gap-1.5 text-xs font-semibold text-danger hover:text-danger hover:bg-danger/10 border-danger/30"
-                >
-                  <Icon icon={XCircle} size={14} />
-                  <span>Reject / Out of Scope</span>
-                </Button>
-              )}
+                {complaint.status !== "RESOLVED" && complaint.status !== "CLOSED" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRejectModalOpen(true)}
+                    disabled={statusLoading}
+                    className="gap-1.5 text-xs font-semibold text-danger hover:text-danger hover:bg-danger/10 border-danger/30"
+                  >
+                    <Icon icon={XCircle} size={14} />
+                    <span>Reject / Out of Scope</span>
+                  </Button>
+                )}
 
-              {complaint.status === "RESOLVED" && (
-                <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-200">
-                  <Icon icon={CheckCircle2} size={15} />
-                  <span>Marked Resolved · Awaiting Citizen Verification</span>
-                </div>
-              )}
-            </div>
+                {complaint.status === "RESOLVED" && (
+                  <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-200">
+                    <Icon icon={CheckCircle2} size={15} />
+                    <span>Marked Resolved · Awaiting Citizen Verification</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Resolution Modal / Dropdown Box */}
-            {resolveModalOpen && (
+            {resolveModalOpen && isOwningDepartment && (
               <div className="mt-2 rounded-xl border border-emerald-300 bg-emerald-50/60 p-4 flex flex-col gap-3">
                 <h3 className="text-xs font-bold text-emerald-900">
                   Resolution Report &amp; Completion Notes
@@ -398,7 +566,7 @@ export function WorkspaceClient({
             )}
 
             {/* Reject Modal / Dropdown Box */}
-            {rejectModalOpen && (
+            {rejectModalOpen && isOwningDepartment && (
               <div className="mt-2 rounded-xl border border-red-300 bg-red-50/60 p-4 flex flex-col gap-3">
                 <h3 className="text-xs font-bold text-red-900">Rejection Reason</h3>
                 <select
@@ -460,16 +628,25 @@ export function WorkspaceClient({
                   rows={2}
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="Add internal engineer dispatch note..."
-                  className="w-full rounded-lg border border-border bg-canvas p-2.5 pr-10 text-xs text-ink focus:border-primary focus:outline-none"
+                  disabled={!isOwningDepartment || notePosting}
+                  placeholder={
+                    isOwningDepartment
+                      ? "Add internal engineer dispatch note..."
+                      : "Internal notes locked for officers outside this department."
+                  }
+                  className="w-full rounded-lg border border-border bg-canvas p-2.5 pr-10 text-xs text-ink focus:border-primary focus:outline-none disabled:bg-surface-subtle disabled:cursor-not-allowed"
                 />
                 <button
                   type="submit"
-                  disabled={!newNote.trim() || notePosting}
+                  disabled={!isOwningDepartment || !newNote.trim() || notePosting}
                   aria-label="Post engineer note"
-                  className="absolute bottom-3 right-3 text-primary hover:text-primary-hover disabled:opacity-40"
+                  className="absolute bottom-3 right-3 text-primary hover:text-primary-hover disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <Icon icon={Send} size={15} />
+                  {notePosting ? (
+                    <Icon icon={Loader2} size={15} className="animate-spin" />
+                  ) : (
+                    <Icon icon={Send} size={15} />
+                  )}
                 </button>
               </div>
             </form>
@@ -529,54 +706,61 @@ export function WorkspaceClient({
                 Supervisors can adjust priority by ±15 points with mandatory rationale notes.
               </p>
 
-              <form onSubmit={handleAdjustPriority} className="flex flex-col gap-3 pt-1">
-                <div className="flex flex-col gap-1">
-                  <div className="flex justify-between text-[11px] text-muted font-medium">
-                    <span>-15</span>
-                    <span>0</span>
-                    <span>+15</span>
+              {!isOwningDepartment ? (
+                <div className="rounded-lg border border-border bg-surface-subtle p-3 text-xs text-muted">
+                  Override controls are locked. Only supervisors of {getDepartmentName(complaint.departmentId)} can adjust priority.
+                </div>
+              ) : (
+                <form onSubmit={handleAdjustPriority} className="flex flex-col gap-3 pt-1">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between text-[11px] text-muted font-medium">
+                      <span>-15</span>
+                      <span>0</span>
+                      <span>+15</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={-15}
+                      max={15}
+                      step={1}
+                      value={adjustmentValue}
+                      onChange={(e) => setAdjustmentValue(parseInt(e.target.value, 10))}
+                      aria-label="Priority adjustment points"
+                      className="w-full accent-primary cursor-pointer"
+                    />
                   </div>
-                  <input
-                    type="range"
-                    min={-15}
-                    max={15}
-                    step={1}
-                    value={adjustmentValue}
-                    onChange={(e) => setAdjustmentValue(parseInt(e.target.value, 10))}
-                    aria-label="Priority adjustment points"
-                    className="w-full accent-primary cursor-pointer"
-                  />
-                </div>
 
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="override-rationale" className="text-xs font-semibold text-ink">
-                    Mandatory Rationale Note
-                  </label>
-                  <textarea
-                    id="override-rationale"
-                    rows={2}
-                    value={rationale}
-                    onChange={(e) => setRationale(e.target.value)}
-                    placeholder="e.g. VIP corridor, school bus route, structural inspection required..."
-                    className="w-full rounded-md border border-border bg-canvas p-2 text-xs text-ink focus:border-primary focus:outline-none"
-                  />
-                </div>
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="override-rationale" className="text-xs font-semibold text-ink">
+                      Mandatory Rationale Note
+                    </label>
+                    <textarea
+                      id="override-rationale"
+                      rows={2}
+                      value={rationale}
+                      onChange={(e) => setRationale(e.target.value)}
+                      placeholder="e.g. VIP corridor, school bus route, structural inspection required..."
+                      className="w-full rounded-md border border-border bg-canvas p-2 text-xs text-ink focus:border-primary focus:outline-none"
+                    />
+                  </div>
 
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={!rationale.trim() || adjusting}
-                  className="h-8 gap-1.5 text-xs font-semibold"
-                >
-                  <span>Apply override</span>
-                </Button>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={!rationale.trim() || adjusting}
+                    className="h-8 gap-1.5 text-xs font-semibold"
+                  >
+                    {adjusting ? <Icon icon={Loader2} size={13} className="animate-spin" /> : null}
+                    <span>Apply override</span>
+                  </Button>
 
-                {adjustSuccess && (
-                  <p className="text-xs font-semibold text-emerald-700">
-                    Priority adjustment updated!
-                  </p>
-                )}
-              </form>
+                  {adjustSuccess && (
+                    <p className="text-xs font-semibold text-emerald-700">
+                      Priority adjustment updated!
+                    </p>
+                  )}
+                </form>
+              )}
             </div>
           </div>
         </div>
