@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-04T16:45:56.115Z",
+  "timestamp": "2026-11-04T17:01:05.438Z",
   "baseUrl": "http://localhost:3000",
   "health": {
     "status": 200,
@@ -8,7 +8,7 @@
       "connection": "keep-alive",
       "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://tiles.openfreemap.org https://api.cloudinary.com http://127.0.0.1:* ws://127.0.0.1:* http://localhost:* ws://localhost:*; img-src 'self' data: blob: https://res.cloudinary.com https://tiles.openfreemap.org; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-src https://*.firebaseapp.com https://accounts.google.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';",
       "content-type": "application/json",
-      "date": "Wed, 04 Nov 2026 16:46:02 GMT",
+      "date": "Wed, 04 Nov 2026 17:01:07 GMT",
       "keep-alive": "timeout=5",
       "permissions-policy": "camera=(), microphone=(), geolocation=(self)",
       "referrer-policy": "strict-origin-when-cross-origin",
@@ -26,7 +26,7 @@
       "indexesHint": true
     }
   },
-  "complaintId": "9f84c21a-b71e-4f4c-8361-04336ef1f14b",
+  "complaintId": "de3b1461-881f-455d-a866-ca4fda8db103",
   "stages": [],
   "screenshots": [
     {
@@ -67,7 +67,7 @@
       "viewport": "360px",
       "width": 360,
       "filename": "02_citizen_dashboard-360px.png",
-      "fileSizeBytes": 53568,
+      "fileSizeBytes": 53248,
       "overflowMetrics": {
         "scrollWidth": 360,
         "clientWidth": 360,
@@ -83,7 +83,7 @@
       "viewport": "1280px",
       "width": 1280,
       "filename": "02_citizen_dashboard-1280px.png",
-      "fileSizeBytes": 126816,
+      "fileSizeBytes": 129485,
       "overflowMetrics": {
         "scrollWidth": 1280,
         "clientWidth": 1280,
@@ -163,7 +163,7 @@
       "viewport": "360px",
       "width": 360,
       "filename": "05_complaint_submitted-360px.png",
-      "fileSizeBytes": 56049,
+      "fileSizeBytes": 56206,
       "overflowMetrics": {
         "scrollWidth": 360,
         "clientWidth": 360,
@@ -179,7 +179,7 @@
       "viewport": "1280px",
       "width": 1280,
       "filename": "05_complaint_submitted-1280px.png",
-      "fileSizeBytes": 85546,
+      "fileSizeBytes": 85702,
       "overflowMetrics": {
         "scrollWidth": 1280,
         "clientWidth": 1280,
@@ -195,7 +195,7 @@
       "viewport": "360px",
       "width": 360,
       "filename": "06_citizen_complaint_detail-360px.png",
-      "fileSizeBytes": 56007,
+      "fileSizeBytes": 56151,
       "overflowMetrics": {
         "scrollWidth": 360,
         "clientWidth": 360,
@@ -211,7 +211,7 @@
       "viewport": "1280px",
       "width": 1280,
       "filename": "06_citizen_complaint_detail-1280px.png",
-      "fileSizeBytes": 119605,
+      "fileSizeBytes": 119818,
       "overflowMetrics": {
         "scrollWidth": 1280,
         "clientWidth": 1280,
@@ -227,7 +227,7 @@
       "viewport": "360px",
       "width": 360,
       "filename": "07_authority_queue-360px.png",
-      "fileSizeBytes": 60793,
+      "fileSizeBytes": 60983,
       "overflowMetrics": {
         "scrollWidth": 360,
         "clientWidth": 360,
@@ -243,7 +243,7 @@
       "viewport": "1280px",
       "width": 1280,
       "filename": "07_authority_queue-1280px.png",
-      "fileSizeBytes": 139623,
+      "fileSizeBytes": 139605,
       "overflowMetrics": {
         "scrollWidth": 1280,
         "clientWidth": 1280,
@@ -275,7 +275,7 @@
       "viewport": "1280px",
       "width": 1280,
       "filename": "08_authority_complaint_workspace-1280px.png",
-      "fileSizeBytes": 141303,
+      "fileSizeBytes": 141106,
       "overflowMetrics": {
         "scrollWidth": 1280,
         "clientWidth": 1280,
@@ -307,7 +307,7 @@
       "viewport": "1280px",
       "width": 1280,
       "filename": "09_authority_complaint_resolved-1280px.png",
-      "fileSizeBytes": 132259,
+      "fileSizeBytes": 132046,
       "overflowMetrics": {
         "scrollWidth": 1280,
         "clientWidth": 1280,
@@ -323,7 +323,7 @@
       "viewport": "360px",
       "width": 360,
       "filename": "10_citizen_complaint_closed-360px.png",
-      "fileSizeBytes": 51413,
+      "fileSizeBytes": 51619,
       "overflowMetrics": {
         "scrollWidth": 360,
         "clientWidth": 360,
@@ -339,7 +339,7 @@
       "viewport": "1280px",
       "width": 1280,
       "filename": "10_citizen_complaint_closed-1280px.png",
-      "fileSizeBytes": 115122,
+      "fileSizeBytes": 115339,
       "overflowMetrics": {
         "scrollWidth": 1280,
         "clientWidth": 1280,
@@ -355,7 +355,7 @@
       "viewport": "360px",
       "width": 360,
       "filename": "11_admin_dashboard-360px.png",
-      "fileSizeBytes": 49117,
+      "fileSizeBytes": 49870,
       "overflowMetrics": {
         "scrollWidth": 360,
         "clientWidth": 360,
@@ -371,7 +371,7 @@
       "viewport": "1280px",
       "width": 1280,
       "filename": "11_admin_dashboard-1280px.png",
-      "fileSizeBytes": 106605,
+      "fileSizeBytes": 107176,
       "overflowMetrics": {
         "scrollWidth": 1280,
         "clientWidth": 1280,
