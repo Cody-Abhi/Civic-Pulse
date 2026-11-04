@@ -1,0 +1,106 @@
+{
+  "pages": [
+    {
+      "target": "landing",
+      "viewport": "360px",
+      "width": 360,
+      "status": 200,
+      "screenshotFilename": "landing-360px.png",
+      "fileSizeBytes": 92433,
+      "overflowMetrics": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "windowWidth": 360,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      },
+      "errors": []
+    },
+    {
+      "target": "landing",
+      "viewport": "1280px",
+      "width": 1280,
+      "status": 200,
+      "screenshotFilename": "landing-1280px.png",
+      "fileSizeBytes": 509173,
+      "overflowMetrics": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "windowWidth": 1280,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      },
+      "errors": []
+    },
+    {
+      "target": "login",
+      "viewport": "360px",
+      "width": 360,
+      "status": 200,
+      "screenshotFilename": "login-360px.png",
+      "fileSizeBytes": 125522,
+      "overflowMetrics": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "windowWidth": 360,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      },
+      "errors": []
+    },
+    {
+      "target": "login",
+      "viewport": "1280px",
+      "width": 1280,
+      "status": 200,
+      "screenshotFilename": "login-1280px.png",
+      "fileSizeBytes": 431567,
+      "overflowMetrics": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "windowWidth": 1280,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 1,
+        "topOverflowElements": [
+          {
+            "tag": "ellipse",
+            "className": "[object SVGAnimatedString]",
+            "right": 1372.80078125,
+            "width": 928.0078125
+          }
+        ]
+      },
+      "errors": []
+    }
+  ],
+  "health": {
+    "status": 200,
+    "headers": {
+      "cache-control": "no-store, no-cache, must-revalidate",
+      "connection": "keep-alive",
+      "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://tiles.openfreemap.org https://api.cloudinary.com http://127.0.0.1:* ws://127.0.0.1:* http://localhost:* ws://localhost:*; img-src 'self' data: blob: https://res.cloudinary.com https://tiles.openfreemap.org; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-src https://*.firebaseapp.com https://accounts.google.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';",
+      "content-type": "application/json",
+      "date": "Wed, 04 Nov 2026 15:28:41 GMT",
+      "keep-alive": "timeout=5",
+      "permissions-policy": "camera=(), microphone=(), geolocation=(self)",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=63072000; includeSubDomains",
+      "transfer-encoding": "chunked",
+      "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY"
+    },
+    "body": {
+      "firestore": true,
+      "auth": true,
+      "gemini": true,
+      "envOk": true,
+      "indexesHint": true
+    }
+  },
+  "overflowIssues": [],
+  "consoleErrors": []
+}

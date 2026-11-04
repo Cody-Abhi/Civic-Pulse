@@ -34,5 +34,3 @@ export function Badge({ className, variant, ...props }: BadgeProps) {
 }
 
 export { badgeVariants };
-export { PriorityBadge, type PriorityBadgeProps, PRIORITY_META } from "./priority-badge";
-export { StatusBadge, type StatusBadgeProps, STATUS_META } from "./status-badge";

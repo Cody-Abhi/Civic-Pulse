@@ -70,12 +70,13 @@ const eslintConfig = defineConfig([
     },
   },
 
-  // Scripts and tests may use console and node globals.
+  // Scripts and tests may use console, node globals, and relaxed mocks.
   {
     files: ["scripts/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}", "**/*.test.{ts,tsx}"],
     rules: {
       "no-console": "off",
       "no-restricted-syntax": "off",
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 
@@ -85,6 +86,9 @@ const eslintConfig = defineConfig([
     "build/**",
     "public/**",
     ".agents/**",
+    "ppt/**",
+    "**/*.pdf",
+    "**/*.pptx",
     "next-env.d.ts",
     "coverage/**",
     "playwright-report/**",
