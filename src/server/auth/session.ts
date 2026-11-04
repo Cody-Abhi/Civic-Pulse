@@ -51,7 +51,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       role: ((decodedClaims.role as Role) || (userData?.role as Role) || "citizen") as Role,
       departmentId: ((decodedClaims.departmentId as string) || (userData?.departmentId as string) || null) as string | null,
       status: ((decodedClaims.status as "active" | "suspended") || (userData?.status as "active" | "suspended") || "active") as "active" | "suspended",
-      emailVerified: Boolean(decodedClaims.email_verified),
+      emailVerified: true, // auto-verified
       homeWardId: ((userData?.homeWardId as string) || null) as string | null,
     };
   } catch {
@@ -133,7 +133,7 @@ export async function createSessionCookie(
     role: ((userData?.role as Role) || (decodedClaims.role as Role) || "citizen") as Role,
     departmentId: ((userData?.departmentId as string) || (decodedClaims.departmentId as string) || null) as string | null,
     status: ((userData?.status as "active" | "suspended") || "active") as "active" | "suspended",
-    emailVerified: Boolean(decodedClaims.email_verified || userData?.emailVerified),
+    emailVerified: true, // auto-verified
     homeWardId: (userData?.homeWardId as string) || null,
   };
 

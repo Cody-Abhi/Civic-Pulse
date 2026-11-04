@@ -89,13 +89,13 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await registerWithEmail({
+      const { session } = await registerWithEmail({
         email: email.trim(),
         pass: password,
         displayName: name.trim(),
         homeWardId: homeArea.trim() || undefined,
       });
-      router.push("/verify-email");
+      router.replace(session?.home || "/citizen/dashboard");
     } catch (err) {
       setError(mapAuthError(err));
     } finally {

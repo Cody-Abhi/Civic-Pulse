@@ -36,12 +36,12 @@ function LoginContent() {
         router.replace(session.home);
         return undefined;
       } else {
-        await registerWithEmail({
+        const { session } = await registerWithEmail({
           email: data.email,
           pass: data.password,
           displayName: data.displayName || "",
         });
-        router.push("/verify-email");
+        router.replace(session?.home || "/citizen/dashboard");
         return undefined;
       }
     } catch (err) {

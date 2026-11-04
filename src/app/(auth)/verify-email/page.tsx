@@ -156,6 +156,13 @@ export default function VerifyEmailPage() {
         <div className="mt-6 flex flex-col gap-3">
           <Button
             type="button"
+            onClick={() => router.replace("/citizen/dashboard")}
+            className="h-11 w-full gap-2 font-semibold bg-primary text-white hover:bg-primary/90"
+          >
+            Continue to Dashboard
+          </Button>
+          <Button
+            type="button"
             onClick={handleCheckVerification}
             disabled={checking}
             className="h-11 w-full gap-2 font-semibold"
