@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 140" width="1100" height="140" style="background: transparent; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <rect x="5" y="5" width="1090" height="130" rx="14" fill="#FFFFFF" stroke="#E3E9EA" stroke-width="1.5"/>
+
+  <!-- Step 1: Frontend -->
+  <g transform="translate(30, 25)">
+    <rect width="180" height="90" rx="8" fill="#F5F8F7" stroke="#E3E9EA" stroke-width="1"/>
+    <text x="16" y="26" font-size="11" font-weight="700" fill="#0F766E">FRONTEND</text>
+    <text x="16" y="48" font-size="14" font-weight="700" fill="#172B36">Next.js 16</text>
+    <text x="16" y="68" font-size="11" fill="#475569">React 19 · Tailwind v4</text>
+    <text x="16" y="82" font-size="10" fill="#64748B">Geist Sans &amp; Radix UI</text>
+  </g>
+
+  <path d="M 220 70 L 240 70" stroke="#0F766E" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Step 2: Auth & DB -->
+  <g transform="translate(245, 25)">
+    <rect width="185" height="90" rx="8" fill="#F5F8F7" stroke="#E3E9EA" stroke-width="1"/>
+    <text x="16" y="26" font-size="11" font-weight="700" fill="#0F766E">BACKEND &amp; DATA</text>
+    <text x="16" y="48" font-size="14" font-weight="700" fill="#172B36">Firebase Spark</text>
+    <text x="16" y="68" font-size="11" fill="#475569">Auth + Firestore Admin</text>
+    <text x="16" y="82" font-size="10" fill="#15803D" font-weight="600">Free Tier · 0 client writes</text>
+  </g>
+
+  <path d="M 440 70 L 460 70" stroke="#0F766E" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Step 3: AI Intelligence -->
+  <g transform="translate(465, 25)">
+    <rect width="185" height="90" rx="8" fill="#EEF0FB" stroke="#D3D8F0" stroke-width="1"/>
+    <text x="16" y="26" font-size="11" font-weight="700" fill="#3B49DF">AI REASONING</text>
+    <text x="16" y="48" font-size="14" font-weight="700" fill="#172B36">Gemini 2.5 Flash</text>
+    <text x="16" y="68" font-size="11" fill="#475569">Google AI Studio Free</text>
+    <text x="16" y="82" font-size="10" fill="#3B49DF" font-weight="600">Deterministic fallback</text>
+  </g>
+
+  <path d="M 660 70 L 680 70" stroke="#0F766E" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Step 4: Maps & Geo -->
+  <g transform="translate(685, 25)">
+    <rect width="185" height="90" rx="8" fill="#F5F8F7" stroke="#E3E9EA" stroke-width="1"/>
+    <text x="16" y="26" font-size="11" font-weight="700" fill="#0F766E">GEOSPATIAL TILES</text>
+    <text x="16" y="48" font-size="14" font-weight="700" fill="#172B36">OpenFreeMap</text>
+    <text x="16" y="68" font-size="11" fill="#475569">MapLibre GL + DataMeet</text>
+    <text x="16" y="82" font-size="10" fill="#15803D" font-weight="600">100% Free · No API key</text>
+  </g>
+
+  <path d="M 880 70 L 900 70" stroke="#0F766E" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Step 5: Hosting & Edge -->
+  <g transform="translate(905, 25)">
+    <rect width="165" height="90" rx="8" fill="#E6F1F0" stroke="#0F766E" stroke-width="1.2"/>
+    <text x="16" y="26" font-size="11" font-weight="700" fill="#0F766E">DEPLOYMENT</text>
+    <text x="16" y="48" font-size="14" font-weight="700" fill="#172B36">Vercel Hobby</text>
+    <text x="16" y="68" font-size="11" fill="#475569">Edge + Serverless</text>
+    <text x="16" y="82" font-size="10" font-weight="700" fill="#0F766E">₹0 / month total</text>
+  </g>
+</svg>

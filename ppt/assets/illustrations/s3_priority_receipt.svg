@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 460" width="880" height="460" style="background: transparent; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <filter id="receiptShadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#172B36" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Ledger Card Container -->
+  <rect x="10" y="10" width="860" height="440" rx="14" fill="#FFFFFF" stroke="#E3E9EA" stroke-width="1.5" filter="url(#receiptShadow)"/>
+
+  <!-- Top Header / Barcode styling -->
+  <path d="M 10 24 Q 10 10 24 10 L 856 10 Q 870 10 870 24 L 870 70 L 10 70 Z" fill="#172B36"/>
+  
+  <text x="32" y="38" font-size="12" font-weight="700" fill="#20DCCB" letter-spacing="1.5">CIVICPULSE PRIORITY RECEIPT §29</text>
+  <text x="32" y="56" font-size="11" fill="#FFFFFF" opacity="0.75" font-family="'Geist Mono', 'SF Mono', Consolas, monospace">REF: CP-BLR-2026-0842 · WARD 150 (BELLANDUR) · WORKED EXAMPLE E1</text>
+  
+  <rect x="740" y="24" width="105" height="32" rx="6" fill="#DC2626"/>
+  <text x="792" y="45" font-size="13" font-weight="800" fill="#FFFFFF" text-anchor="middle" letter-spacing="1">CRITICAL</text>
+
+  <!-- Score Summary Header -->
+  <g transform="translate(32, 90)">
+    <text x="0" y="28" font-size="14" font-weight="600" fill="#64748B">CATEGORY</text>
+    <text x="0" y="52" font-size="18" font-weight="700" fill="#172B36">DRAINAGE (OPEN DRAIN NEAR SCHOOL)</text>
+    
+    <text x="600" y="20" font-size="12" font-weight="600" fill="#64748B" text-anchor="right">TOTAL PRIORITY SCORE</text>
+    <text x="600" y="54" font-size="38" font-weight="800" fill="#172B36">70 <tspan font-size="18" font-weight="600" fill="#64748B">/ 100</tspan></text>
+  </g>
+
+  <!-- Line items divider -->
+  <line x1="32" y1="160" x2="848" y2="160" stroke="#E3E9EA" stroke-width="1.5" stroke-dasharray="4 4"/>
+
+  <!-- Table Header -->
+  <g transform="translate(32, 180)" font-size="11" font-weight="700" fill="#64748B" letter-spacing="0.5">
+    <text x="0" y="0">FACTOR KEY &amp; WEIGHT</text>
+    <text x="240" y="0">GROUND-TRUTH DETAIL &amp; CONDITIONS</text>
+    <text x="660" y="0" text-anchor="end">CALCULATED CONTRIBUTION</text>
+  </g>
+
+  <!-- Line Item 1: S -->
+  <g transform="translate(32, 205)" font-size="13">
+    <text x="0" y="0" font-weight="700" fill="#172B36">Severity (S) <tspan font-weight="500" fill="#64748B">· 25%</tspan></text>
+    <text x="240" y="0" fill="#475569">Base severity 4 of 5 (factor 0.75)</text>
+    <text x="660" y="0" font-weight="700" fill="#172B36" text-anchor="end">+18.75 pts</text>
+  </g>
+
+  <!-- Line Item 2: H -->
+  <g transform="translate(32, 230)" font-size="13">
+    <text x="0" y="0" font-weight="700" fill="#172B36">Safety Hazard (H) <tspan font-weight="500" fill="#64748B">· 20%</tspan></text>
+    <text x="240" y="0" fill="#B42318" font-weight="600">Risk reported: INJURY_RISK (factor 1.0)</text>
+    <text x="660" y="0" font-weight="700" fill="#DC2626" text-anchor="end">+20.00 pts</text>
+  </g>
+
+  <!-- Line Item 3: R -->
+  <g transform="translate(32, 255)" font-size="13">
+    <text x="0" y="0" font-weight="700" fill="#172B36">Reports (R) <tspan font-weight="500" fill="#64748B">· 15%</tspan></text>
+    <text x="240" y="0" fill="#475569">4 independent reporters (u=3, ln(4)/ln(11) = 0.578)</text>
+    <text x="660" y="0" font-weight="700" fill="#172B36" text-anchor="end">+8.67 pts</text>
+  </g>
+
+  <!-- Line Item 4: D -->
+  <g transform="translate(32, 280)" font-size="13">
+    <text x="0" y="0" font-weight="700" fill="#172B36">Waiting Time (D) <tspan font-weight="500" fill="#64748B">· 15%</tspan></text>
+    <text x="240" y="0" fill="#475569">20 h elapsed of 48 h SLA target (factor 0.208)</text>
+    <text x="660" y="0" font-weight="700" fill="#172B36" text-anchor="end">+3.13 pts</text>
+  </g>
+
+  <!-- Line Item 5: A -->
+  <g transform="translate(32, 305)" font-size="13">
+    <text x="0" y="0" font-weight="700" fill="#172B36">Affected Scale (A) <tspan font-weight="500" fill="#64748B">· 10%</tspan></text>
+    <text x="240" y="0" fill="#475569">School / arterial pedestrian zone (scale 1.0)</text>
+    <text x="660" y="0" font-weight="700" fill="#172B36" text-anchor="end">+10.00 pts</text>
+  </g>
+
+  <!-- Line Item 6: G -->
+  <g transform="translate(32, 330)" font-size="13">
+    <text x="0" y="0" font-weight="700" fill="#172B36">Hotspot Density (G) <tspan font-weight="500" fill="#64748B">· 10%</tspan></text>
+    <text x="240" y="0" fill="#475569">4 other open complaints within 500 m (factor 0.40)</text>
+    <text x="660" y="0" font-weight="700" fill="#172B36" text-anchor="end">+4.00 pts</text>
+  </g>
+
+  <!-- Line Item 7: T -->
+  <g transform="translate(32, 355)" font-size="13">
+    <text x="0" y="0" font-weight="700" fill="#172B36">Season (T) <tspan font-weight="500" fill="#64748B">· 5%</tspan></text>
+    <text x="240" y="0" fill="#475569">Monsoon season sensitive (November, factor 1.0)</text>
+    <text x="660" y="0" font-weight="700" fill="#172B36" text-anchor="end">+5.00 pts</text>
+  </g>
+
+  <!-- Bottom Divider -->
+  <line x1="32" y1="375" x2="848" y2="375" stroke="#172B36" stroke-width="1.5"/>
+
+  <!-- Footer Formula Verification -->
+  <g transform="translate(32, 405)">
+    <text x="0" y="0" font-size="11" font-weight="600" fill="#64748B">Pre-rounding sum: 69.55 pts → roundHalfUp() = 70</text>
+    <text x="0" y="16" font-size="11" fill="#0F766E" font-weight="600">Deterministic TypeScript (§29 pure function) · Gemini has zero scoring weight</text>
+    <text x="816" y="8" font-size="14" font-weight="800" fill="#DC2626" text-anchor="end">FINAL: 70 [CRITICAL]</text>
+  </g>
+</svg>

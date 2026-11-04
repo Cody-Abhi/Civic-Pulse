@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 180" width="1100" height="180" style="background: transparent; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <filter id="pShadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#172B36" flood-opacity="0.05"/>
+    </filter>
+  </defs>
+
+  <!-- Pillar 1 -->
+  <g transform="translate(10, 10)">
+    <rect width="345" height="155" rx="12" fill="#FFFFFF" stroke="#E3E9EA" stroke-width="1.5" filter="url(#pShadow)"/>
+    <circle cx="36" cy="36" r="18" fill="#EEF0FB"/>
+    <path d="M 28 36 L 44 36 M 36 28 L 36 44" stroke="#3B49DF" stroke-width="2" stroke-linecap="round"/>
+    <text x="66" y="34" font-size="16" font-weight="700" fill="#172B36">1. Gemini AI Reads</text>
+    <text x="66" y="50" font-size="11" font-weight="600" fill="#3B49DF">Advisory understanding</text>
+    <text x="24" y="86" font-size="13" fill="#475569">
+      <tspan x="24" dy="0">Extracts category, summary &amp; hazards.</tspan>
+      <tspan x="24" dy="20">Strict JSON output. Keyword fallback</tspan>
+      <tspan x="24" dy="20">guarantees 100% uptime if offline.</tspan>
+    </text>
+  </g>
+
+  <!-- Pillar 2 -->
+  <g transform="translate(375, 10)">
+    <rect width="345" height="155" rx="12" fill="#FFFFFF" stroke="#E3E9EA" stroke-width="1.5" filter="url(#pShadow)"/>
+    <circle cx="36" cy="36" r="18" fill="#FBF0E0"/>
+    <circle cx="36" cy="36" r="8" fill="none" stroke="#CA8A04" stroke-width="2"/>
+    <text x="66" y="34" font-size="16" font-weight="700" fill="#172B36">2. Duplicate Radar</text>
+    <text x="66" y="50" font-size="11" font-weight="600" fill="#CA8A04">Nearby similarity</text>
+    <text x="24" y="86" font-size="13" fill="#475569">
+      <tspan x="24" dy="0">Scans 500 m &amp; 30 days via embeddings.</tspan>
+      <tspan x="24" dy="20">Citizens tap "Add my voice"; engineers</tspan>
+      <tspan x="24" dy="20">confirm links. Zero auto-merging.</tspan>
+    </text>
+  </g>
+
+  <!-- Pillar 3 -->
+  <g transform="translate(740, 10)">
+    <rect width="345" height="155" rx="12" fill="#FFFFFF" stroke="#0F766E" stroke-width="1.8" filter="url(#pShadow)"/>
+    <circle cx="36" cy="36" r="18" fill="#E6F1F0"/>
+    <path d="M 28 36 L 34 42 L 44 30" stroke="#0F766E" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <text x="66" y="34" font-size="16" font-weight="700" fill="#172B36">3. Priority Receipt</text>
+    <text x="66" y="50" font-size="11" font-weight="600" fill="#0F766E">Auditable deterministic code</text>
+    <text x="24" y="86" font-size="13" fill="#475569">
+      <tspan x="24" dy="0">Itemised 0-100 score from 7 factors.</tspan>
+      <tspan x="24" dy="20">Formulaic TypeScript (§29). Gemini</tspan>
+      <tspan x="24" dy="20">has zero weight in the score.</tspan>
+    </text>
+  </g>
+</svg>
