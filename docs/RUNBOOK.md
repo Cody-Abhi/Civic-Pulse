@@ -151,3 +151,14 @@ Once Firestore indexes are enabled and service account credentials are ready:
    - **Authority Journey**: Sign in as **Roads Authority Demo** via `/login`. Verify queue filters by Roads department and composite index query loads complaints instantly.
    - **Administrator Journey**: Sign in as `admin@demo.civicpulse.invalid` using `DEMO_ADMIN_PASSWORD`. Verify system settings and AI monitoring dashboard load.
    - **Security Bundle Verification**: Run `pnpm check:bundle-secrets` to confirm zero secrets are present in client assets.
+
+3. **Automated Cloud Verification & E2E Test Suite**:
+   Run the dual-viewport live verification script against the production deployment:
+   ```bash
+   PLAYWRIGHT_BASE_URL="https://<your-vercel-domain>.vercel.app" pnpm run verify:live
+   ```
+   Run the full desktop E2E journey suite against the production deployment:
+   ```bash
+   PLAYWRIGHT_BASE_URL="https://<your-vercel-domain>.vercel.app" pnpm run test:e2e:desktop
+   ```
+

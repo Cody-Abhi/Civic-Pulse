@@ -124,6 +124,16 @@ pnpm run test:rules
 # End-to-End Responsive & WCAG 2.1 AA Journeys
 pnpm run test:e2e
 
+# Fast Desktop E2E Journeys (desktop-1280)
+pnpm run test:e2e:desktop
+
+# Automated Dual-Viewport Live Verification (360px & 1280px screenshots, 0 overflow, 0 console errors)
+pnpm run verify:live
+
+# Target Live Cloud Deployment on Vercel:
+# PLAYWRIGHT_BASE_URL="https://<your-vercel-domain>.vercel.app" pnpm run verify:live
+# PLAYWRIGHT_BASE_URL="https://<your-vercel-domain>.vercel.app" pnpm run test:e2e:desktop
+
 # Zero-404 Link Crawler E2E (Crawls all role routes with zero 404s)
 pnpm exec playwright test tests/e2e/link-crawler.spec.ts
 

@@ -136,7 +136,7 @@ test.describe("Full Internal Link Crawler & Zero-404 Verification (PRD UI-14..22
   test("Crawl Authority Workspace and assert zero 404s on all internal links", async ({ page }) => {
     // 1. Sign in as authority
     await page.goto("/login", { waitUntil: "domcontentloaded" });
-    const demoBtn = page.locator("button:has-text('Authority Demo')");
+    const demoBtn = page.locator("button:has-text('Roads Authority Demo')");
     await demoBtn.waitFor({ state: "visible", timeout: 15000 });
     await demoBtn.click();
     await page.waitForURL((url) => url.pathname.includes("/authority"), { timeout: 25000 });
@@ -197,8 +197,12 @@ test.describe("Full Internal Link Crawler & Zero-404 Verification (PRD UI-14..22
   test("Crawl Admin Governance Workspace and assert zero 404s on all internal links", async ({ page }) => {
     // 1. Sign in as admin
     await page.goto("/login", { waitUntil: "domcontentloaded" });
+    await page.locator("button:has-text('Citizen Demo')").waitFor({ state: "visible", timeout: 15000 });
     await page.fill("input[type='email']", "admin@demo.civicpulse.invalid");
-    await page.fill("input[type='password']", "CivicPulseDemo2026!");
+    await page.fill(
+      "input[type='password']",
+      process.env.DEMO_ADMIN_PASSWORD || "CivicPulseDemo2026!",
+    );
     await page.click("button[type='submit']");
     await page.waitForURL((url) => url.pathname.includes("/admin"), { timeout: 25000 });
 

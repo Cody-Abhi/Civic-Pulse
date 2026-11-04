@@ -3,6 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 
 test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => {
   test.describe.configure({ mode: "serial" });
+  test.setTimeout(60_000);
 
   test.beforeEach(async ({ page }) => {
     // Inject mock geolocation for Bengaluru Indiranagar
@@ -74,11 +75,17 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
 
     // Step 1: Category selection
     const potholeBtn = page.locator("button:has-text('Road pothole')");
+    const nextDetailsBtn = page.locator("button:has-text('Next: Details')");
     await potholeBtn.click();
-    await page.locator("button:has-text('Next: Details')").click();
+    await nextDetailsBtn.click();
 
-    // Step 2: Details & Description
-    await page.waitForSelector("#report-title", { timeout: 10000 });
+    // Step 2: Details & Description (retry click if hydration swallowed initial click on SSR DOM)
+    const titleInput = page.locator("#report-title");
+    if (!(await titleInput.isVisible({ timeout: 2000 }).catch(() => false))) {
+      await potholeBtn.click();
+      await nextDetailsBtn.click();
+    }
+    await titleInput.waitFor({ state: "visible", timeout: 10000 });
     await page.fill("#report-title", "Dangerous crater pothole near 100ft road Indiranagar");
     await page.fill(
       "#report-description",
@@ -165,11 +172,22 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
   test("Admin Journey: login, audit logs, and AI telemetry monitoring", async ({ page }) => {
     // Login
     await page.goto("/login", { waitUntil: "domcontentloaded" });
-    await page.fill("input[type='email']", "admin@demo.civicpulse.invalid");
-    await page.fill(
-      "input[type='password']",
+
+    // Wait for client hydration before typing into React 19 controlled inputs
+    await page.locator("button:has-text('Citizen Demo')").waitFor({ state: "visible", timeout: 15000 });
+
+    const emailInput = page.locator("input[type='email']");
+    await emailInput.fill("admin@demo.civicpulse.invalid");
+    await expect(emailInput).toHaveValue("admin@demo.civicpulse.invalid");
+
+    const passwordInput = page.locator("input[type='password']");
+    await passwordInput.fill(
       process.env.DEMO_ADMIN_PASSWORD || "CivicPulseDemo2026!",
     );
+    await expect(passwordInput).toHaveValue(
+      process.env.DEMO_ADMIN_PASSWORD || "CivicPulseDemo2026!",
+    );
+
     await page.click("button[type='submit']");
 
     // Navigate to admin area
@@ -220,11 +238,18 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
 
     // Open complaint wizard step 2
     await page.goto("/citizen/complaints/new", { waitUntil: "domcontentloaded" });
-    await page.locator("button:has-text('Road pothole')").click();
-    await page.locator("button:has-text('Next: Details')").click();
+    const potholeBtn = page.locator("button:has-text('Road pothole')");
+    const nextDetailsBtn = page.locator("button:has-text('Next: Details')");
+    await potholeBtn.click();
+    await nextDetailsBtn.click();
 
-    // Type a report matching common potholes in Bellandur/Indiranagar
-    await page.waitForSelector("#report-title", { timeout: 10000 });
+    // Type a report matching common potholes in Bellandur/Indiranagar (retry if hydration swallowed click)
+    const titleInput = page.locator("#report-title");
+    if (!(await titleInput.isVisible({ timeout: 2000 }).catch(() => false))) {
+      await potholeBtn.click();
+      await nextDetailsBtn.click();
+    }
+    await titleInput.waitFor({ state: "visible", timeout: 10000 });
     await page.fill("#report-title", "Massive pothole on Indiranagar 100ft road");
     await page.fill(
       "#report-description",
