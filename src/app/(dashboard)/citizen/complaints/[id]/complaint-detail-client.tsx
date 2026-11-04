@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import * as React from "react";
 import Link from "next/link";
@@ -375,6 +376,32 @@ export function ComplaintDetailClient({ complaint: initialComplaint }: Complaint
               </span>
             </div>
           </div>
+
+          {/* Attached Evidence Photos */}
+          {complaint.evidence && complaint.evidence.length > 0 && (
+            <div className="flex flex-col gap-3 rounded-md border border-border bg-surface p-6 shadow-xs">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold text-ink">
+                  Attached Evidence ({complaint.evidence.length})
+                </h2>
+                <span className="text-xs text-muted">On-ground photos</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {complaint.evidence.map((item, idx) => (
+                  <div
+                    key={item.publicId || idx}
+                    className="group relative rounded-lg border border-border overflow-hidden bg-canvas aspect-4/3 flex items-center justify-center"
+                  >
+                    <img
+                      src={item.url}
+                      alt={`Evidence photo ${idx + 1}`}
+                      className="object-cover w-full h-full hover:scale-105 transition-transform duration-200"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Advisory AI Card */}
           <AIAnalysisCard

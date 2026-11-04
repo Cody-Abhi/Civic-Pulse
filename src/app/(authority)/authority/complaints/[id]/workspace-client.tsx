@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import * as React from "react";
 import Link from "next/link";
@@ -237,6 +238,32 @@ export function WorkspaceClient({
                 <span>{complaint.supporterCount || 0} voices added</span>
               </span>
             </div>
+
+            {/* Attached on-ground photos */}
+            {complaint.evidence && complaint.evidence.length > 0 && (
+              <div className="mt-4 border-t border-border/70 pt-4">
+                <div className="flex items-center justify-between pb-2 text-xs">
+                  <span className="font-semibold text-ink">
+                    Attached Evidence ({complaint.evidence.length})
+                  </span>
+                  <span className="text-muted">On-ground photos</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {complaint.evidence.map((item, idx) => (
+                    <div
+                      key={item.publicId || idx}
+                      className="group relative rounded-lg border border-border overflow-hidden bg-canvas aspect-4/3 flex items-center justify-center"
+                    >
+                      <img
+                        src={item.url}
+                        alt={`Evidence photo ${idx + 1}`}
+                        className="object-cover w-full h-full hover:scale-105 transition-transform duration-200"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── AI Advisory Analysis & Verified Severity (§27) ── */}

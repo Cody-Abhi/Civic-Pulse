@@ -52,9 +52,22 @@ export const createComplaintSchema = z.object({
   affectedScale: affectedScaleSchema,
   hazardFlags: z.array(hazardFlagSchema).default([]),
   visibility: z.enum(["public", "private"]).default("public"),
+  evidence: z
+    .array(
+      z.object({
+        publicId: z.string(),
+        url: z.string(),
+        width: z.number().default(800),
+        height: z.number().default(600),
+        public: z.boolean().default(true),
+      }),
+    )
+    .max(3)
+    .optional()
+    .default([]),
 });
 
-export type CreateComplaintInput = z.infer<typeof createComplaintSchema>;
+export type CreateComplaintInput = z.input<typeof createComplaintSchema>;
 
 export interface ListComplaintsOptions {
   userId?: string | undefined;
@@ -470,7 +483,7 @@ export async function createComplaint(
       slaDueAt: new Date(nowMs + slaHours * 3600 * 1000).toISOString(),
       aiAnalysisId: linkedAnalysisId,
       aiStatus: validated.categorySource === "ai" ? "gemini" : "fallback",
-      evidence: [],
+      evidence: validated.evidence || [],
       resolution: null,
       feedback: null,
       isSynthetic: false,

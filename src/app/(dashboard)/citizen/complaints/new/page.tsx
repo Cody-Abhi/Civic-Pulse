@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import * as React from "react";
 import Link from "next/link";
@@ -11,6 +12,10 @@ import {
   CheckCircle2,
   Loader2,
   Info,
+  Camera,
+  Upload,
+  X,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ReferenceChip } from "@/components/ui/reference-chip";
@@ -133,43 +138,157 @@ export default function ReportWizardPage() {
   const [analysisToken, setAnalysisToken] = React.useState<string | null>(null);
   const [useAiCategory, setUseAiCategory] = React.useState<boolean>(true);
 
+  // Photo Upload State (§14.4, §33.2)
+  interface UploadedPhoto {
+    id: string;
+    name: string;
+    dataUrl: string;
+    mimeType: string;
+    sizeBytes: number;
+    width: number;
+    height: number;
+  }
+  const [photos, setPhotos] = React.useState<UploadedPhoto[]>([]);
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
+  const [processingPhotos, setProcessingPhotos] = React.useState<boolean>(false);
+  const [isDragOver, setIsDragOver] = React.useState<boolean>(false);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleFiles = async (fileList: FileList | File[]) => {
+    setUploadError(null);
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
+
+    if (photos.length + files.length > 3) {
+      setUploadError("Maximum 3 photos allowed. Please select fewer images.");
+      return;
+    }
+
+    setProcessingPhotos(true);
+    try {
+      const processed: UploadedPhoto[] = [];
+      for (const file of files) {
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+          throw new Error("Use a JPG, PNG or WebP image.");
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error(`"${file.name}" is too large. Max 5MB allowed.`);
+        }
+
+        const photo = await new Promise<UploadedPhoto>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = () => reject(new Error(`Failed to read "${file.name}".`));
+          reader.onload = (e) => {
+            const src = e.target?.result as string;
+            const img = new Image();
+            img.onerror = () => reject(new Error(`Invalid image data in "${file.name}".`));
+            img.onload = () => {
+              // Strip EXIF and downscale to max 1600px via canvas (PRD §14.4, §33.2)
+              const maxEdge = 1600;
+              let width = img.width;
+              let height = img.height;
+              if (width > maxEdge || height > maxEdge) {
+                if (width > height) {
+                  height = Math.round((height * maxEdge) / width);
+                  width = maxEdge;
+                } else {
+                  width = Math.round((width * maxEdge) / height);
+                  height = maxEdge;
+                }
+              }
+
+              const canvas = document.createElement("canvas");
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext("2d");
+              if (!ctx) return reject(new Error("Canvas context unavailable."));
+
+              ctx.drawImage(img, 0, 0, width, height);
+              const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+              const sizeBytes = Math.round((dataUrl.length * 3) / 4);
+
+              resolve({
+                id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                name: file.name,
+                dataUrl,
+                mimeType: "image/jpeg",
+                sizeBytes,
+                width,
+                height,
+              });
+            };
+            img.src = src;
+          };
+          reader.readAsDataURL(file);
+        });
+
+        processed.push(photo);
+      }
+
+      setPhotos((prev) => [...prev, ...processed]);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Failed to process photo.");
+    } finally {
+      setProcessingPhotos(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const removePhoto = (id: string) => {
+    setPhotos((prev) => prev.filter((p) => p.id !== id));
+    setUploadError(null);
+  };
+
   // Live Duplicate Radar State (§28)
   const [duplicates, setDuplicates] = React.useState<DuplicateCandidateResult[]>([]);
   const [duplicatesLoading, setDuplicatesLoading] = React.useState<boolean>(false);
   const [isAddingVoice, setIsAddingVoice] = React.useState<string | null>(null);
   const [supportedIds, setSupportedIds] = React.useState<string[]>([]);
 
-  // Trigger non-blocking AI draft analysis
-  const triggerAiAnalysis = React.useCallback(async () => {
-    if (!form.description.trim() || form.description.length < 5) return;
-    setAiLoading(true);
-    try {
-      const res = await fetch("/api/ai/analyze-draft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: form.title || undefined,
-          description: form.description,
-          categoryHint: form.category,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setAiAnalysis(data.analysis);
-        setAnalysisToken(data.analysisToken);
-        if (data.analysis?.output?.predictedCategory && useAiCategory) {
-          setForm((prev) => ({
-            ...prev,
-            category: data.analysis.output.predictedCategory as ComplaintCategory,
-          }));
+  // Trigger non-blocking AI draft analysis with multimodal visual evaluation
+  const triggerAiAnalysis = React.useCallback(
+    async (photosToAnalyze?: UploadedPhoto[]) => {
+      if (!form.description.trim() || form.description.length < 5) return;
+      setAiLoading(true);
+      const activePhotos = photosToAnalyze !== undefined ? photosToAnalyze : photos;
+      try {
+        const res = await fetch("/api/ai/analyze-draft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: form.title || undefined,
+            description: form.description,
+            categoryHint: form.category,
+            images:
+              activePhotos.length > 0
+                ? activePhotos.map((p) => ({
+                    data: p.dataUrl,
+                    mimeType: p.mimeType,
+                  }))
+                : undefined,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAiAnalysis(data.analysis);
+          setAnalysisToken(data.analysisToken);
+          if (data.analysis?.output?.predictedCategory && useAiCategory) {
+            setForm((prev) => ({
+              ...prev,
+              category: data.analysis.output.predictedCategory as ComplaintCategory,
+            }));
+          }
         }
+      } catch {
+        // AI failure never blocks citizen flow (§27.6)
+      } finally {
+        setAiLoading(false);
       }
-    } catch {
-      // AI failure never blocks citizen flow (§27.6)
-    } finally {
-      setAiLoading(false);
-    }
-  }, [form.description, form.title, form.category, useAiCategory]);
+    },
+    [form.description, form.title, form.category, photos, useAiCategory],
+  );
 
   // Trigger Duplicate Radar check
   const triggerDuplicateCheck = React.useCallback(async () => {
@@ -322,6 +441,13 @@ export default function ReportWizardPage() {
           affectedScale: form.affectedScale,
           hazardFlags: form.hazardFlags,
           visibility: form.visibility,
+          evidence: photos.map((p) => ({
+            publicId: p.id,
+            url: p.dataUrl,
+            width: p.width,
+            height: p.height,
+            public: true,
+          })),
         }),
       });
 
@@ -667,20 +793,131 @@ export default function ReportWizardPage() {
       {/* Step 4: Evidence Photos (Optional) */}
       {step === 4 && (
         <div className="flex flex-col gap-6">
-          <div className="rounded-md border border-dashed border-border bg-surface p-8 flex flex-col items-center justify-center text-center gap-3">
-            <span className="text-4xl">📸</span>
-            <div className="flex flex-col gap-1">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files) handleFiles(e.target.files);
+            }}
+          />
+
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragOver(true);
+            }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragOver(false);
+              if (e.dataTransfer.files) handleFiles(e.dataTransfer.files);
+            }}
+            className={`rounded-xl border-2 border-dashed p-8 flex flex-col items-center justify-center text-center gap-4 transition-colors ${
+              isDragOver
+                ? "border-primary bg-primary/10"
+                : "border-border bg-surface hover:border-primary/50"
+            }`}
+          >
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Camera className="h-8 w-8" aria-hidden="true" />
+            </div>
+
+            <div className="flex flex-col gap-1 max-w-md">
               <h3 className="text-base font-semibold text-ink">Upload on-ground photos</h3>
-              <p className="text-xs text-muted max-w-md">
-                Photos help municipal engineers verify the hazard faster. Photos are optional and all EXIF metadata is stripped before saving.
+              <p className="text-xs text-muted leading-relaxed">
+                Photos help municipal engineers verify the hazard faster. Photos are optional and all
+                EXIF / GPS metadata is automatically stripped client-side before submission.
               </p>
             </div>
-            <div className="pt-2">
-              <Button variant="secondary" size="sm" type="button">
-                Select photos (Max 3)
-              </Button>
-            </div>
+
+            {uploadError && (
+              <div className="rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 flex items-center gap-1.5">
+                <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{uploadError}</span>
+              </div>
+            )}
+
+            {processingPhotos ? (
+              <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                <span>Stripping EXIF & optimizing photos…</span>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={photos.length >= 3}
+                  className="gap-2"
+                >
+                  <Upload className="h-4 w-4" aria-hidden="true" />
+                  <span>
+                    {photos.length === 0
+                      ? "Select photos (Max 3)"
+                      : photos.length < 3
+                        ? `Add photo (${photos.length} of 3)`
+                        : "3 of 3 photos added"}
+                  </span>
+                </Button>
+                <span className="text-[11px] text-muted">or drag & drop files here (JPG, PNG, WebP ≤ 5MB)</span>
+              </div>
+            )}
           </div>
+
+          {/* Photo Preview Cards */}
+          {photos.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-ink">
+                  Attached Photos ({photos.length} of 3)
+                </span>
+                <span className="text-muted flex items-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
+                  <span>EXIF metadata stripped</span>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {photos.map((photo, index) => (
+                  <div
+                    key={photo.id}
+                    className="group relative rounded-lg border border-border bg-surface p-2 shadow-2xs flex flex-col gap-2 overflow-hidden"
+                  >
+                    <div className="relative aspect-4/3 w-full rounded bg-canvas overflow-hidden flex items-center justify-center">
+                      <img
+                        src={photo.dataUrl}
+                        alt={`Photo evidence ${index + 1}`}
+                        className="object-cover w-full h-full"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(photo.id)}
+                        className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-rose-600 transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500 cursor-pointer"
+                        aria-label={`Remove photo ${index + 1}`}
+                        title="Remove photo"
+                      >
+                        <X className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between px-1 text-[11px]">
+                      <span className="truncate font-medium text-ink max-w-[140px]" title={photo.name}>
+                        {photo.name}
+                      </span>
+                      <span className="text-muted shrink-0">
+                        {Math.round(photo.sizeBytes / 1024)} KB
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-between pt-4">
             <Button variant="outline" onClick={() => setStep(3)} className="gap-2">
@@ -689,7 +926,7 @@ export default function ReportWizardPage() {
             </Button>
             <Button
               onClick={() => {
-                if (!aiAnalysis) triggerAiAnalysis();
+                triggerAiAnalysis(photos);
                 triggerDuplicateCheck();
                 setStep(5);
               }}
@@ -716,6 +953,38 @@ export default function ReportWizardPage() {
             </div>
           ) : aiAnalysis ? (
             <div className="flex flex-col gap-4">
+              {photos.length > 0 && (
+                <div className="rounded-lg border border-border bg-surface p-3 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-ink flex items-center gap-1.5">
+                      <Camera className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                      <span>Attached Photos for Visual Analysis ({photos.length})</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setStep(4)}
+                      className="text-xs font-medium text-primary hover:underline cursor-pointer"
+                    >
+                      Change photos
+                    </button>
+                  </div>
+                  <div className="flex gap-2.5 overflow-x-auto pb-1">
+                    {photos.map((p, idx) => (
+                      <div
+                        key={p.id}
+                        className="relative h-16 w-20 rounded-md border border-border overflow-hidden shrink-0 bg-canvas"
+                      >
+                        <img
+                          src={p.dataUrl}
+                          alt={`Attached photo ${idx + 1}`}
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <AIAnalysisCard
                 analysis={aiAnalysis.output}
                 source={aiAnalysis.source}
@@ -773,7 +1042,12 @@ export default function ReportWizardPage() {
               <p className="text-xs text-ink-muted leading-relaxed">
                 Click below to analyse your draft or proceed directly to confirmation. AI suggestions are strictly advisory and assist municipal dispatchers.
               </p>
-              <Button size="sm" variant="outline" onClick={triggerAiAnalysis} className="self-start gap-1.5 text-xs">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => triggerAiAnalysis(photos)}
+                className="self-start gap-1.5 text-xs"
+              >
                 <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Run Analysis Now</span>
               </Button>
@@ -860,6 +1134,37 @@ export default function ReportWizardPage() {
                     </div>
                   </div>
                 )}
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted">Evidence Photos ({photos.length})</span>
+                    <button
+                      type="button"
+                      onClick={() => setStep(4)}
+                      className="text-xs font-medium text-primary hover:underline cursor-pointer"
+                    >
+                      Edit photos
+                    </button>
+                  </div>
+                  {photos.length > 0 ? (
+                    <div className="flex gap-2.5 pt-2 overflow-x-auto">
+                      {photos.map((p, idx) => (
+                        <div
+                          key={p.id}
+                          className="relative h-16 w-20 rounded border border-border overflow-hidden shrink-0 bg-canvas"
+                        >
+                          <img
+                            src={p.dataUrl}
+                            alt={`Photo evidence ${idx + 1}`}
+                            className="object-cover w-full h-full"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted italic pt-1">No photos attached (optional)</p>
+                  )}
+                </div>
               </div>
             </div>
 

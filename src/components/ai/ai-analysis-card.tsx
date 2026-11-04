@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Sparkles, HelpCircle, ChevronDown, ChevronUp, Bot, Cpu } from "lucide-react";
+import { Sparkles, HelpCircle, ChevronDown, ChevronUp, Bot, Cpu, Camera, CheckCircle2, AlertTriangle } from "lucide-react";
 import type { AIAnalysisOutput, ComplaintCategory } from "@/domain/schemas";
 import { CATEGORY_CONFIG } from "@/domain/categories";
 
@@ -134,6 +134,54 @@ export function AIAnalysisCard({
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Visual Photo Evidence Evaluation (Multimodal AI Assessment) */}
+      {(analysis.visualEvidenceAssessment ||
+        analysis.hazardDetectedInImage !== undefined ||
+        analysis.imageConfidence !== undefined) && (
+        <div className="rounded-lg border border-primary/25 bg-white/90 p-4 flex flex-col gap-2.5 shadow-2xs">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/10 pb-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary">
+              <Camera className="h-4 w-4 text-primary" aria-hidden="true" />
+              <span>Visual Evidence AI Evaluation</span>
+            </div>
+            {analysis.imageConfidence !== undefined && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary border border-primary/20 px-2.5 py-0.5 text-xs font-bold">
+                Visual Score: {Math.round(analysis.imageConfidence * 100)}/100
+              </span>
+            )}
+          </div>
+
+          {analysis.visualEvidenceAssessment && (
+            <p className="text-xs text-ink leading-relaxed font-medium">
+              {analysis.visualEvidenceAssessment}
+            </p>
+          )}
+
+          {analysis.hazardDetectedInImage !== undefined && (
+            <div className="flex items-center gap-2 pt-0.5 text-xs">
+              <span className="text-muted">On-ground verification:</span>
+              <span
+                className={`inline-flex items-center gap-1 font-semibold ${
+                  analysis.hazardDetectedInImage ? "text-emerald-700" : "text-amber-700"
+                }`}
+              >
+                {analysis.hazardDetectedInImage ? (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
+                    Hazard visually confirmed
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-600" aria-hidden="true" />
+                    Inconclusive / No hazard visible
+                  </>
+                )}
+              </span>
+            </div>
+          )}
         </div>
       )}
 

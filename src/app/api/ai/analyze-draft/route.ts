@@ -10,6 +10,15 @@ const analyzeDraftSchema = z.object({
   title: z.string().max(140).optional(),
   description: z.string().min(5, "Description must be at least 5 characters").max(1200),
   categoryHint: z.enum(CATEGORIES).optional(),
+  images: z
+    .array(
+      z.object({
+        data: z.string(),
+        mimeType: z.string().default("image/jpeg"),
+      }),
+    )
+    .max(3)
+    .optional(),
 });
 
 type AnalyzeDraftBody = z.infer<typeof analyzeDraftSchema>;
@@ -24,6 +33,7 @@ export const POST = withApi<AnalyzeDraftBody>(
         title: body.title,
         description: body.description,
         categoryHint: body.categoryHint,
+        images: body.images,
       },
       user,
     );

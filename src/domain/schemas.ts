@@ -103,5 +103,8 @@ export const aiAnalysisOutputSchema = z.object({
   recommendedDepartment: z.string().min(1),
   reasoning: z.string().min(1).max(600),
   possibleDuplicateIndicators: z.array(z.string()).max(20),
+  visualEvidenceAssessment: z.string().max(600).optional(),
+  hazardDetectedInImage: z.boolean().optional(),
+  imageConfidence: z.number().min(0).max(1).optional(),
 });
 export type AIAnalysisOutput = z.infer<typeof aiAnalysisOutputSchema>;

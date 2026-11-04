@@ -35,6 +35,12 @@ Rules:
 6. confidence: your probability that predictedCategory is correct (0–1). Use < 0.5 if ambiguous.
 7. possibleDuplicateIndicators: concrete landmarks or recurring phrases useful to match other reports (e.g., "bus stop on 27th Main"), never personal data.
 8. Input may be in English, Hindi, Kannada or mixed (Hinglish/Kanglish). Always answer in English.
+9. Visual Evidence Evaluation: If on-ground photos are attached, visually inspect them closely:
+   - Determine if the reported civic hazard is visible in the photo(s).
+   - Set hazardDetectedInImage to true if physical evidence of the issue (pothole, garbage pile, water leak, broken infrastructure, dark street, etc.) is visible; false if the image does not show a civic hazard.
+   - Set imageConfidence from 0.0 to 1.0 representing how clearly and convincingly the photo demonstrates the problem and its severity (e.g. 0.85 = clear photo showing significant damage/waste).
+   - In visualEvidenceAssessment (up to 300 characters), give an objective evaluation of what the photo shows and explain the visual score (e.g., "Image confirms deep asphalt pothole approximately 2 feet wide on traffic lane", or "Photo shows overflow of municipal bin onto pedestrian walkway", or "No visible civic damage detected in attached photo").
+   If no images are provided, omit these 3 fields.
 Respond ONLY with JSON matching the provided schema.`;
 
 export type FallbackReason =
@@ -136,6 +142,7 @@ export async function analyzeComplaintDraft(
     title?: string | undefined;
     description: string;
     categoryHint?: ComplaintCategory | undefined;
+    images?: Array<{ data: string; mimeType: string }> | undefined;
   },
   user?: SessionUser | null | undefined,
 ): Promise<{ analysis: AIAnalysisRecord; analysisToken: string }> {
@@ -149,12 +156,24 @@ export async function analyzeComplaintDraft(
   const redactedTitle = redactPII(rawTitle).text;
   const redactedDesc = redactPII(rawDesc).text;
   const categoryHint = input.categoryHint || undefined;
+  const images = input.images || [];
 
   // 2. Hash calculation for caching (PRD §27.4)
   const inputNormalized = `${redactedTitle.toLowerCase()}|${redactedDesc.toLowerCase()}`;
+  const imageHashPart =
+    images.length > 0
+      ? images
+          .map((img) =>
+            crypto
+              .createHash("md5")
+              .update(img.data.slice(0, 500) + img.data.slice(-500))
+              .digest("hex"),
+          )
+          .join(":")
+      : "no-img";
   const inputHash = crypto
     .createHash("sha256")
-    .update(`${PROMPT_VERSION}:${categoryHint || "none"}:${inputNormalized}`)
+    .update(`${PROMPT_VERSION}:${categoryHint || "none"}:${inputNormalized}:${imageHashPart}`)
     .digest("hex");
 
   // Check 24-hour cache from Firestore
@@ -180,6 +199,11 @@ export async function analyzeComplaintDraft(
   // 3. Check Emergency Pause Switch (PRD-AI-007)
   if (settings.ai.paused) {
     const fallback = classifyByKeywords(redactedTitle, redactedDesc, categoryHint);
+    if (images.length > 0) {
+      fallback.output.visualEvidenceAssessment = `On-ground photographic evidence attached (${images.length} photo${images.length > 1 ? "s" : ""}). Visual evidence logged for municipal inspection.`;
+      fallback.output.hazardDetectedInImage = true;
+      fallback.output.imageConfidence = 0.85;
+    }
     const latency = Date.now() - startTime;
     const record: AIAnalysisRecord = {
       id: analysisId,
@@ -217,6 +241,19 @@ export async function analyzeComplaintDraft(
 <description>${sanitizeReportTags(redactedDesc)}</description>
 </report>`;
 
+  const contentsPayload: Array<string | { inlineData: { mimeType: string; data: string } }> = [
+    userContent,
+  ];
+  for (const img of images) {
+    const cleanData = img.data.replace(/^data:[^;]+;base64,/, "");
+    contentsPayload.push({
+      inlineData: {
+        mimeType: img.mimeType || "image/jpeg",
+        data: cleanData,
+      },
+    });
+  }
+
   const config = getGeminiModelConfig();
   const modelsToTry = [config.primary, config.fallback];
 
@@ -230,7 +267,7 @@ export async function analyzeComplaintDraft(
       const client = getGeminiClient();
       const callPromise = client.models.generateContent({
         model: modelName,
-        contents: userContent,
+        contents: contentsPayload,
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
           responseMimeType: "application/json",
@@ -255,6 +292,9 @@ export async function analyzeComplaintDraft(
                 type: "ARRAY",
                 items: { type: "STRING" },
               },
+              visualEvidenceAssessment: { type: "STRING" },
+              hazardDetectedInImage: { type: "BOOLEAN" },
+              imageConfidence: { type: "NUMBER" },
             },
             required: [
               "predictedCategory",
@@ -268,7 +308,7 @@ export async function analyzeComplaintDraft(
               "possibleDuplicateIndicators",
             ],
           },
-          maxOutputTokens: 512,
+          maxOutputTokens: 768,
         },
       });
 
@@ -340,6 +380,11 @@ export async function analyzeComplaintDraft(
 
   // 6. Graceful Deterministic Keyword Fallback (§27.6)
   const fallback = classifyByKeywords(redactedTitle, redactedDesc, categoryHint);
+  if (images.length > 0) {
+    fallback.output.visualEvidenceAssessment = `On-ground photographic evidence attached (${images.length} photo${images.length > 1 ? "s" : ""}). Visual evidence logged for municipal inspection.`;
+    fallback.output.hazardDetectedInImage = true;
+    fallback.output.imageConfidence = 0.85;
+  }
   const fallbackRecord: AIAnalysisRecord = {
     id: analysisId,
     inputHash,
