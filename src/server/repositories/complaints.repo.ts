@@ -15,13 +15,10 @@ import type {
   NotificationType,
 } from "@/domain/types";
 import {
-  categorySchema,
-  hazardFlagSchema,
-  durationBucketSchema,
-  affectedScaleSchema,
   OPEN_STATUSES,
+  createComplaintSchema,
+  type CreateComplaintInput,
 } from "@/domain/schemas";
-import { z } from "zod";
 import { redactPII } from "@/domain/redact";
 import { computePriority } from "@/domain/priority";
 import {
@@ -32,42 +29,10 @@ import {
 } from "@/domain/categories";
 import { validateTransition } from "@/domain/transitions";
 import { isInsideBengaluru, findWardByPoint, findWardById, geohashEncode } from "@/domain/geo";
-import { verifyAnalysisToken } from "@/server/services/ai";
+import { verifyAnalysisToken } from "@/server/auth/analysis-token";
 import type { SessionUser } from "@/server/auth/session";
 
-export const createComplaintSchema = z.object({
-  title: z.string().max(80).optional(),
-  description: z.string().min(20).max(1000),
-  category: categorySchema,
-  categorySource: z.enum(["user", "ai", "fallback"]).default("user"),
-  analysisToken: z.string().optional(),
-  location: z.object({
-    lat: z.number().min(-90).max(90),
-    lng: z.number().min(-180).max(180),
-    wardId: z.string().optional(),
-    landmark: z.string().max(120).optional(),
-    accuracyM: z.number().optional(),
-  }),
-  durationBucket: durationBucketSchema,
-  affectedScale: affectedScaleSchema,
-  hazardFlags: z.array(hazardFlagSchema).default([]),
-  visibility: z.enum(["public", "private"]).default("public"),
-  evidence: z
-    .array(
-      z.object({
-        publicId: z.string(),
-        url: z.string(),
-        width: z.number().default(800),
-        height: z.number().default(600),
-        public: z.boolean().default(true),
-      }),
-    )
-    .max(3)
-    .optional()
-    .default([]),
-});
-
-export type CreateComplaintInput = z.input<typeof createComplaintSchema>;
+export { createComplaintSchema, type CreateComplaintInput };
 
 export interface ListComplaintsOptions {
   userId?: string | undefined;

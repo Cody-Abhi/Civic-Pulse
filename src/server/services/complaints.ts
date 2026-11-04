@@ -12,9 +12,17 @@ import type { SessionUser } from "@/server/auth/session";
 import * as complaintsRepo from "@/server/repositories/complaints.repo";
 import * as metricsRepo from "@/server/repositories/metrics.repo";
 
-export const createComplaintSchema = complaintsRepo.createComplaintSchema;
-export type CreateComplaintInput = complaintsRepo.CreateComplaintInput;
-export type ListComplaintsOptions = complaintsRepo.ListComplaintsOptions;
+import {
+  createComplaintSchema,
+  type CreateComplaintInput,
+} from "@/domain/schemas";
+import type { ListComplaintsOptions } from "@/server/repositories/complaints.repo";
+
+export {
+  createComplaintSchema,
+  type CreateComplaintInput,
+  type ListComplaintsOptions,
+};
 
 /**
  * Returns all complaints from Firestore repository.

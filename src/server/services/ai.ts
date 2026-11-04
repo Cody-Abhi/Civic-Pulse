@@ -1,7 +1,6 @@
 import "server-only";
 import crypto from "crypto";
 import { getGeminiClient, getGeminiModelConfig } from "@/server/clients/gemini";
-import { getServerEnv } from "@/lib/server-env";
 import { getAdminFirestore } from "@/server/clients/firebase-admin";
 import { getSystemSettings, recordAiInferenceCall } from "@/server/services/admin";
 import { getComplaints, updateComplaintPriority } from "@/server/services/complaints";
@@ -65,55 +64,17 @@ export interface AIAnalysisRecord {
   createdAt: string;
 }
 
+import {
+  signAnalysisToken,
+  verifyAnalysisToken,
+  type VerifiedAnalysisToken,
+} from "@/server/auth/analysis-token";
+
+export { signAnalysisToken, verifyAnalysisToken, type VerifiedAnalysisToken };
+
 // Analysis token signing (§27.2, §40).
 export function sanitizeReportTags(text: string): string {
   return text.replace(/</g, "‹").replace(/>/g, "›");
-}
-
-/**
- * Signs an analysis token using HMAC-SHA256 (§27.2, §40).
- */
-export function signAnalysisToken(analysisId: string, uid: string): string {
-  const env = getServerEnv();
-  const secret = env.ANALYSIS_TOKEN_SECRET;
-  const exp = Date.now() + 2 * 3600 * 1000; // 2 hours validity
-  const payload = `${analysisId}:${uid}:${exp}`;
-  const hmac = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-  return `${Buffer.from(payload).toString("base64url")}.${hmac}`;
-}
-
-/**
- * Verifies and decodes an analysis token.
- */
-export function verifyAnalysisToken(token: string): { analysisId: string; uid: string } | null {
-  try {
-    const [encodedPayload, receivedHmac] = token.split(".");
-    if (!encodedPayload || !receivedHmac) return null;
-
-    const env = getServerEnv();
-    const secret = env.ANALYSIS_TOKEN_SECRET;
-    const payload = Buffer.from(encodedPayload, "base64url").toString("utf-8");
-    const expectedHmac = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-
-    if (
-      !crypto.timingSafeEqual(
-        Buffer.from(receivedHmac, "utf-8"),
-        Buffer.from(expectedHmac, "utf-8"),
-      )
-    ) {
-      return null;
-    }
-
-    const [analysisId, uid, expStr] = payload.split(":");
-    if (!analysisId || !uid || !expStr) return null;
-
-    const exp = parseInt(expStr, 10);
-    if (Date.now() > exp) return null;
-
-    return { analysisId, uid };
-  } catch {
-    return null;
-  }
 }
 
 /**

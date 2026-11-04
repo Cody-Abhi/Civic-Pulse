@@ -6,6 +6,7 @@ import type { ComplaintStatus } from "@/domain/types";
 import { z } from "zod";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const bulkTransitionSchema = z.object({
   ids: z.array(z.string()).min(1).max(50),

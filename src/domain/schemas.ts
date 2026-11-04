@@ -108,3 +108,39 @@ export const aiAnalysisOutputSchema = z.object({
   imageConfidence: z.number().min(0).max(1).optional(),
 });
 export type AIAnalysisOutput = z.infer<typeof aiAnalysisOutputSchema>;
+
+/** Citizen complaint submission schema (§21, §24, §40). Pure domain definition. */
+export const createComplaintSchema = z.object({
+  title: z.string().max(80).optional(),
+  description: z.string().min(20).max(1000),
+  category: categorySchema,
+  categorySource: z.enum(["user", "ai", "fallback"]).default("user"),
+  analysisToken: z.string().optional(),
+  location: z.object({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+    wardId: z.string().optional(),
+    landmark: z.string().max(120).optional(),
+    accuracyM: z.number().optional(),
+  }),
+  durationBucket: durationBucketSchema,
+  affectedScale: affectedScaleSchema,
+  hazardFlags: z.array(hazardFlagSchema).default([]),
+  visibility: z.enum(["public", "private"]).default("public"),
+  evidence: z
+    .array(
+      z.object({
+        publicId: z.string(),
+        url: z.string(),
+        width: z.number().default(800),
+        height: z.number().default(600),
+        public: z.boolean().default(true),
+      }),
+    )
+    .max(3)
+    .optional()
+    .default([]),
+});
+
+export type CreateComplaintInput = z.input<typeof createComplaintSchema>;
+
