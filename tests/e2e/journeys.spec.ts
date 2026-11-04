@@ -132,7 +132,7 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
   test("Authority Journey: login, queue triage, and workspace inspection", async ({ page }) => {
     // Login
     await page.goto("/login", { waitUntil: "domcontentloaded" });
-    const demoBtn = page.locator("button:has-text('Authority Demo')");
+    const demoBtn = page.locator("button:has-text('Roads Authority Demo')");
     await demoBtn.waitFor({ state: "visible", timeout: 15000 });
     await demoBtn.click();
 
@@ -166,7 +166,10 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
     // Login
     await page.goto("/login", { waitUntil: "domcontentloaded" });
     await page.fill("input[type='email']", "admin@demo.civicpulse.invalid");
-    await page.fill("input[type='password']", "CivicPulseDemo2026!");
+    await page.fill(
+      "input[type='password']",
+      process.env.DEMO_ADMIN_PASSWORD || "CivicPulseDemo2026!",
+    );
     await page.click("button[type='submit']");
 
     // Navigate to admin area

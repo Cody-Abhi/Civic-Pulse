@@ -1,0 +1,422 @@
+{
+  "timestamp": "2026-11-04T16:45:56.115Z",
+  "baseUrl": "http://localhost:3000",
+  "health": {
+    "status": 200,
+    "headers": {
+      "cache-control": "no-store, no-cache, must-revalidate",
+      "connection": "keep-alive",
+      "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://tiles.openfreemap.org https://api.cloudinary.com http://127.0.0.1:* ws://127.0.0.1:* http://localhost:* ws://localhost:*; img-src 'self' data: blob: https://res.cloudinary.com https://tiles.openfreemap.org; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-src https://*.firebaseapp.com https://accounts.google.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';",
+      "content-type": "application/json",
+      "date": "Wed, 04 Nov 2026 16:46:02 GMT",
+      "keep-alive": "timeout=5",
+      "permissions-policy": "camera=(), microphone=(), geolocation=(self)",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=63072000; includeSubDomains",
+      "transfer-encoding": "chunked",
+      "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY"
+    },
+    "body": {
+      "firestore": true,
+      "auth": true,
+      "gemini": true,
+      "envOk": true,
+      "indexesHint": true
+    }
+  },
+  "complaintId": "9f84c21a-b71e-4f4c-8361-04336ef1f14b",
+  "stages": [],
+  "screenshots": [
+    {
+      "step": "01_login_panel",
+      "label": "Login Panel with Demo Accounts",
+      "viewport": "360px",
+      "width": 360,
+      "filename": "01_login_panel-360px.png",
+      "fileSizeBytes": 125522,
+      "overflowMetrics": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "windowWidth": 360,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "01_login_panel",
+      "label": "Login Panel with Demo Accounts",
+      "viewport": "1280px",
+      "width": 1280,
+      "filename": "01_login_panel-1280px.png",
+      "fileSizeBytes": 431567,
+      "overflowMetrics": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "windowWidth": 1280,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "02_citizen_dashboard",
+      "label": "Citizen Dashboard",
+      "viewport": "360px",
+      "width": 360,
+      "filename": "02_citizen_dashboard-360px.png",
+      "fileSizeBytes": 53568,
+      "overflowMetrics": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "windowWidth": 360,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "02_citizen_dashboard",
+      "label": "Citizen Dashboard",
+      "viewport": "1280px",
+      "width": 1280,
+      "filename": "02_citizen_dashboard-1280px.png",
+      "fileSizeBytes": 126816,
+      "overflowMetrics": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "windowWidth": 1280,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "03_wizard_details",
+      "label": "Complaint Wizard Details & Hazard",
+      "viewport": "360px",
+      "width": 360,
+      "filename": "03_wizard_details-360px.png",
+      "fileSizeBytes": 57736,
+      "overflowMetrics": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "windowWidth": 360,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "03_wizard_details",
+      "label": "Complaint Wizard Details & Hazard",
+      "viewport": "1280px",
+      "width": 1280,
+      "filename": "03_wizard_details-1280px.png",
+      "fileSizeBytes": 90855,
+      "overflowMetrics": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "windowWidth": 1280,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "04_wizard_priority_receipt",
+      "label": "Priority Receipt Preview",
+      "viewport": "360px",
+      "width": 360,
+      "filename": "04_wizard_priority_receipt-360px.png",
+      "fileSizeBytes": 53985,
+      "overflowMetrics": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "windowWidth": 360,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "04_wizard_priority_receipt",
+      "label": "Priority Receipt Preview",
+      "viewport": "1280px",
+      "width": 1280,
+      "filename": "04_wizard_priority_receipt-1280px.png",
+      "fileSizeBytes": 122525,
+      "overflowMetrics": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "windowWidth": 1280,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "05_complaint_submitted",
+      "label": "Report Successfully Submitted",
+      "viewport": "360px",
+      "width": 360,
+      "filename": "05_complaint_submitted-360px.png",
+      "fileSizeBytes": 56049,
+      "overflowMetrics": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "windowWidth": 360,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "05_complaint_submitted",
+      "label": "Report Successfully Submitted",
+      "viewport": "1280px",
+      "width": 1280,
+      "filename": "05_complaint_submitted-1280px.png",
+      "fileSizeBytes": 85546,
+      "overflowMetrics": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "windowWidth": 1280,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "06_citizen_complaint_detail",
+      "label": "Citizen Complaint Detail",
+      "viewport": "360px",
+      "width": 360,
+      "filename": "06_citizen_complaint_detail-360px.png",
+      "fileSizeBytes": 56007,
+      "overflowMetrics": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "windowWidth": 360,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "06_citizen_complaint_detail",
+      "label": "Citizen Complaint Detail",
+      "viewport": "1280px",
+      "width": 1280,
+      "filename": "06_citizen_complaint_detail-1280px.png",
+      "fileSizeBytes": 119605,
+      "overflowMetrics": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "windowWidth": 1280,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "07_authority_queue",
+      "label": "Roads Authority Queue",
+      "viewport": "360px",
+      "width": 360,
+      "filename": "07_authority_queue-360px.png",
+      "fileSizeBytes": 60793,
+      "overflowMetrics": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "windowWidth": 360,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "07_authority_queue",
+      "label": "Roads Authority Queue",
+      "viewport": "1280px",
+      "width": 1280,
+      "filename": "07_authority_queue-1280px.png",
+      "fileSizeBytes": 139623,
+      "overflowMetrics": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "windowWidth": 1280,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "08_authority_complaint_workspace",
+      "label": "Authority Complaint Workspace with Note",
+      "viewport": "360px",
+      "width": 360,
+      "filename": "08_authority_complaint_workspace-360px.png",
+      "fileSizeBytes": 51471,
+      "overflowMetrics": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "windowWidth": 360,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "08_authority_complaint_workspace",
+      "label": "Authority Complaint Workspace with Note",
+      "viewport": "1280px",
+      "width": 1280,
+      "filename": "08_authority_complaint_workspace-1280px.png",
+      "fileSizeBytes": 141303,
+      "overflowMetrics": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "windowWidth": 1280,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "09_authority_complaint_resolved",
+      "label": "Authority Complaint Marked Resolved",
+      "viewport": "360px",
+      "width": 360,
+      "filename": "09_authority_complaint_resolved-360px.png",
+      "fileSizeBytes": 53358,
+      "overflowMetrics": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "windowWidth": 360,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "09_authority_complaint_resolved",
+      "label": "Authority Complaint Marked Resolved",
+      "viewport": "1280px",
+      "width": 1280,
+      "filename": "09_authority_complaint_resolved-1280px.png",
+      "fileSizeBytes": 132259,
+      "overflowMetrics": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "windowWidth": 1280,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "10_citizen_complaint_closed",
+      "label": "Citizen Complaint Verified & Closed",
+      "viewport": "360px",
+      "width": 360,
+      "filename": "10_citizen_complaint_closed-360px.png",
+      "fileSizeBytes": 51413,
+      "overflowMetrics": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "windowWidth": 360,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "10_citizen_complaint_closed",
+      "label": "Citizen Complaint Verified & Closed",
+      "viewport": "1280px",
+      "width": 1280,
+      "filename": "10_citizen_complaint_closed-1280px.png",
+      "fileSizeBytes": 115122,
+      "overflowMetrics": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "windowWidth": 1280,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "11_admin_dashboard",
+      "label": "Admin Dashboard Overview",
+      "viewport": "360px",
+      "width": 360,
+      "filename": "11_admin_dashboard-360px.png",
+      "fileSizeBytes": 49117,
+      "overflowMetrics": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "windowWidth": 360,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "11_admin_dashboard",
+      "label": "Admin Dashboard Overview",
+      "viewport": "1280px",
+      "width": 1280,
+      "filename": "11_admin_dashboard-1280px.png",
+      "fileSizeBytes": 106605,
+      "overflowMetrics": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "windowWidth": 1280,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "12_admin_audit_trail",
+      "label": "Admin Governance Audit Trail",
+      "viewport": "360px",
+      "width": 360,
+      "filename": "12_admin_audit_trail-360px.png",
+      "fileSizeBytes": 40730,
+      "overflowMetrics": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "windowWidth": 360,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    },
+    {
+      "step": "12_admin_audit_trail",
+      "label": "Admin Governance Audit Trail",
+      "viewport": "1280px",
+      "width": 1280,
+      "filename": "12_admin_audit_trail-1280px.png",
+      "fileSizeBytes": 126266,
+      "overflowMetrics": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "windowWidth": 1280,
+        "hasHorizontalScrollbar": false,
+        "overflowingElementsCount": 0,
+        "topOverflowElements": []
+      }
+    }
+  ],
+  "overflowIssues": [],
+  "consoleErrors": [],
+  "networkFailures": [],
+  "cspViolations": [],
+  "passed": true
+}
