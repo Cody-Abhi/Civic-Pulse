@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { User, Shield, Briefcase, Loader2, Sparkles, AlertCircle } from "lucide-react";
 import { Icon } from "@/components/ui/icon";
 import { loginWithEmail, mapAuthError } from "@/lib/auth-client";
+import { clientEnv } from "@/lib/env";
 import { cn } from "@/lib/cn";
 
 interface DemoAccount {
@@ -15,30 +16,6 @@ interface DemoAccount {
   description: string;
 }
 
-const DEFAULT_DEMO_ACCOUNTS: DemoAccount[] = [
-  {
-    role: "citizen",
-    email: "citizen@demo.civicpulse.invalid",
-    password: "CivicPulseDemo2026!",
-    label: "Citizen Demo",
-    description: "File reports, upvote neighbors & view Priority Receipt",
-  },
-  {
-    role: "authority",
-    email: "roads@demo.civicpulse.invalid",
-    password: "CivicPulseDemo2026!",
-    label: "Roads Authority Demo",
-    description: "Manage priority queue, live operations map & SLAs (Roads)",
-  },
-  {
-    role: "authority",
-    email: "drainage@demo.civicpulse.invalid",
-    password: "CivicPulseDemo2026!",
-    label: "Drainage Authority Demo",
-    description: "Triage stormwater drains, flood hazards & culvert repairs",
-  },
-];
-
 interface DemoAccountPanelProps {
   className?: string;
 }
@@ -48,11 +25,15 @@ export function DemoAccountPanel({ className }: DemoAccountPanelProps) {
   const searchParams = useSearchParams();
   const nextParam = searchParams?.get("next");
 
-  const [accounts, setAccounts] = React.useState<DemoAccount[]>(DEFAULT_DEMO_ACCOUNTS);
+  const [accounts, setAccounts] = React.useState<DemoAccount[]>([]);
+  const [isFetching, setIsFetching] = React.useState<boolean>(Boolean(clientEnv.DEMO_MODE));
   const [loadingEmail, setLoadingEmail] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    if (!clientEnv.DEMO_MODE) {
+      return;
+    }
     let mounted = true;
     fetch("/api/demo/credentials")
       .then((res) => (res.ok ? res.json() : null))
@@ -61,11 +42,24 @@ export function DemoAccountPanel({ className }: DemoAccountPanelProps) {
           setAccounts(data.accounts);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (mounted) {
+          setIsFetching(false);
+        }
+      });
     return () => {
       mounted = false;
     };
   }, []);
+
+  if (!clientEnv.DEMO_MODE) {
+    return null;
+  }
+
+  if (!isFetching && accounts.length === 0) {
+    return null;
+  }
 
   const handleSelectAccount = async (account: DemoAccount) => {
     if (loadingEmail) return;
@@ -73,7 +67,10 @@ export function DemoAccountPanel({ className }: DemoAccountPanelProps) {
     setLoadingEmail(account.email);
 
     try {
-      const password = account.password || "CivicPulseDemo2026!";
+      const password = account.password;
+      if (!password) {
+        throw new Error("Demo credentials currently unavailable. Check DEMO_PASSWORD environment variable.");
+      }
       const session = await loginWithEmail(account.email, password, nextParam);
       router.replace(session.home);
     } catch (err) {
@@ -126,48 +123,55 @@ export function DemoAccountPanel({ className }: DemoAccountPanelProps) {
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        {accounts.map((acc) => {
-          const isLoading = loadingEmail === acc.email;
-          const RoleIcon = getRoleIcon(acc.role);
+      {isFetching && accounts.length === 0 ? (
+        <div className="flex items-center justify-center py-6 text-white/60 text-xs gap-2">
+          <Icon icon={Loader2} size={16} className="animate-spin text-primary" />
+          <span>Loading verified demo accounts…</span>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {accounts.map((acc) => {
+            const isLoading = loadingEmail === acc.email;
+            const RoleIcon = getRoleIcon(acc.role);
 
-          return (
-            <button
-              key={acc.email}
-              type="button"
-              onClick={() => handleSelectAccount(acc)}
-              disabled={Boolean(loadingEmail)}
-              className={cn(
-                "group relative flex items-center justify-between rounded-lg border border-white/10 bg-white/10 px-3.5 py-2.5 text-left transition-all duration-200",
-                "hover:border-primary/50 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-primary/40",
-                "disabled:cursor-not-allowed disabled:opacity-50",
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white/10 text-white group-hover:bg-primary group-hover:text-white transition-colors">
-                  {isLoading ? (
-                    <Icon icon={Loader2} size={16} className="animate-spin" />
-                  ) : (
-                    <Icon icon={RoleIcon} size={16} />
-                  )}
+            return (
+              <button
+                key={acc.email}
+                type="button"
+                onClick={() => handleSelectAccount(acc)}
+                disabled={Boolean(loadingEmail)}
+                className={cn(
+                  "group relative flex items-center justify-between rounded-lg border border-white/10 bg-white/10 px-3.5 py-2.5 text-left transition-all duration-200",
+                  "hover:border-primary/50 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-primary/40",
+                  "disabled:cursor-not-allowed disabled:opacity-50",
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white/10 text-white group-hover:bg-primary group-hover:text-white transition-colors">
+                    {isLoading ? (
+                      <Icon icon={Loader2} size={16} className="animate-spin" />
+                    ) : (
+                      <Icon icon={RoleIcon} size={16} />
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-white">
+                      {acc.label}
+                    </span>
+                    <span className="text-[11px] text-white/60 line-clamp-1">
+                      {acc.description}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-white">
-                    {acc.label}
-                  </span>
-                  <span className="text-[11px] text-white/60 line-clamp-1">
-                    {acc.description}
-                  </span>
-                </div>
-              </div>
 
-              <span className="text-[11px] font-medium text-primary group-hover:underline shrink-0 ml-2">
-                {isLoading ? "Signing in…" : "Sign In →"}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+                <span className="text-[11px] font-medium text-primary group-hover:underline shrink-0 ml-2">
+                  {isLoading ? "Signing in…" : "Sign In →"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

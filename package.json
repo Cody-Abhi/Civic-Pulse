@@ -22,6 +22,8 @@
     "verify:metrics": "tsx scripts/verify-metrics.ts",
     "bootstrap:admin": "tsx scripts/bootstrap-admin.ts",
     "seed": "tsx scripts/seed/seed.ts",
+    "check:env": "tsx scripts/check-env.ts",
+    "sync:env": "tsx scripts/sync-env.ts",
     "check:bundle-secrets": "tsx scripts/check-bundle-secrets.ts"
   },
   "dependencies": {

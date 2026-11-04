@@ -16,16 +16,16 @@ to resolution.
 
 ## Live Production Deployment & Demo Accounts
 
-- **Live Application URL**: [https://civicpulse.vercel.app](https://civicpulse.vercel.app)
+- **Live Application URL**: [https://<your-vercel-domain>](https://<your-vercel-domain>)
 - **GitHub Repository**: [https://github.com/Cody-Abhi/Civic-Pulse](https://github.com/Cody-Abhi/Civic-Pulse)
 
 For testing and grading without manual registration, seeded demo credentials are pre-configured:
 
-| Role | Account Email | Default Password | Workspace Capabilities & Notes |
+| Role | Account Email | Sign-In Method | Workspace Capabilities & Notes |
 | :--- | :--- | :--- | :--- |
-| **Citizen** | `citizen@demo.civicpulse.invalid` | `CivicPulseDemo2026!` | 6-step complaint wizard, Priority Receipt, duplicate radar, status tracking, withdrawal (T2), resolution feedback (T8/T9). Quick 1-click login on `/login`. |
-| **Authority** | `roads@demo.civicpulse.invalid` | `CivicPulseDemo2026!` | Department triage queue, priority matrix, SLA countdown, resolution evidence upload, status transitions. Quick 1-click login on `/login`. |
-| **Administrator** | `admin@demo.civicpulse.invalid` | `CivicPulseDemo2026!` | Governance dashboard, role & department management, algorithm weights adjustment, audit logs export, AI rate limiting & pause. (Admin credentials are not served over public APIs; manual password entry required). |
+| **Citizen** | `citizen@demo.civicpulse.invalid` | 1-click on `/login` | 6-step complaint wizard, Priority Receipt, duplicate radar, status tracking, withdrawal (T2), resolution feedback (T8/T9). |
+| **Authority** | `roads@demo.civicpulse.invalid` | 1-click on `/login` | Department triage queue, priority matrix, SLA countdown, resolution evidence upload, status transitions. |
+| **Administrator** | `admin@demo.civicpulse.invalid` | Configured via `DEMO_ADMIN_PASSWORD` | Governance dashboard, role & department management, algorithm weights adjustment, audit logs export, AI rate limiting & pause. (Admin credentials are not served over public APIs; manual password entry required). |
 
 > On the `/login` page, click the **Citizen Demo** or **Roads Authority Demo** card for 1-click credential population and authentication.
 >
@@ -138,18 +138,29 @@ pnpm build
 1. Push your repository to GitHub.
 2. Import the project in the [Vercel Dashboard](https://vercel.com).
 3. Configure the following environment variables in Vercel:
-   - `APP_URL`: Production domain URL (e.g. `https://civicpulse.vercel.app`)
-   - `NEXT_PUBLIC_APP_URL`: Production domain URL
-   - `NEXT_PUBLIC_FIREBASE_API_KEY`: Firebase web API key
-   - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`: `<project-id>.firebaseapp.com`
-   - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`: `<project-id>`
-   - `NEXT_PUBLIC_FIREBASE_APP_ID`: Firebase Web App ID
-   - `FIREBASE_ADMIN_PROJECT_ID`: Firebase project ID
-   - `FIREBASE_ADMIN_CLIENT_EMAIL`: Service account email
-   - `FIREBASE_ADMIN_PRIVATE_KEY`: Service account private key (with escaped `\n`)
-   - `GEMINI_API_KEY`: Google AI Studio Gemini API key
-   - `DEMO_MODE`: `"true"` (enables quick demo accounts)
-   - `NEXT_PUBLIC_DEMO_MODE`: `"true"`
+
+<!-- BEGIN:vercel-env -->
+| Environment Variable | Description | Exposure |
+| :--- | :--- | :--- |
+| `APP_URL` | Production canonical URL (e.g. https://<your-vercel-domain>) | Server Only (Secret) |
+| `NEXT_PUBLIC_APP_URL` | Public canonical app URL | Client (`NEXT_PUBLIC_*`) |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase Web API key | Client (`NEXT_PUBLIC_*`) |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase Auth domain (<project>.firebaseapp.com) | Client (`NEXT_PUBLIC_*`) |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase Project ID | Client (`NEXT_PUBLIC_*`) |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase Web App ID | Client (`NEXT_PUBLIC_*`) |
+| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase Cloud Messaging Sender ID | Client (`NEXT_PUBLIC_*`) |
+| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Firebase Storage Bucket | Client (`NEXT_PUBLIC_*`) |
+| `FIREBASE_ADMIN_PROJECT_ID` | Firebase Admin Project ID | Server Only (Secret) |
+| `FIREBASE_ADMIN_CLIENT_EMAIL` | Firebase Admin Service Account Email | Server Only (Secret) |
+| `FIREBASE_ADMIN_PRIVATE_KEY` | Firebase Admin Private Key (PEM format with \n) | Server Only (Secret) |
+| `GEMINI_API_KEY` | Google AI Studio Gemini API Key | Server Only (Secret) |
+| `ANALYSIS_TOKEN_SECRET` | HMAC secret >= 32 chars (generate: openssl rand -hex 32) | Server Only (Secret) |
+| `DEMO_MODE` | Enable seeded demo modes ('true' / 'false') | Server Only (Secret) |
+| `NEXT_PUBLIC_DEMO_MODE` | Public demo flag matching DEMO_MODE | Client (`NEXT_PUBLIC_*`) |
+| `DEMO_PASSWORD` | Password for seeded citizen and authority demo accounts | Server Only (Secret) |
+| `CRON_SECRET` | Secret bearer token for Vercel Cron endpoints (min 16 chars) | Server Only (Secret) |
+<!-- END:vercel-env -->
+
 4. Deploy with Vercel CLI or Git push:
 ```bash
 vercel --prod

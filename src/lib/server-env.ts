@@ -1,65 +1,23 @@
 import "server-only";
 import { z } from "zod";
+import { serverEnvSchema, type ServerEnv } from "./env-schema";
+
+export type { ServerEnv } from "./env-schema";
+
+let cached: ServerEnv | null = null;
 
 /**
  * Server-only secrets (§40). Validated lazily and cached: importing this module
  * never throws, but the first access without required runtime credentials fails
  * fast with a clear, aggregated message.
  */
-const boolish = (def: boolean) =>
-  z
-    .string()
-    .optional()
-    .transform((v) => (v === undefined ? def : v === "true" || v === "1"));
-
-const serverSchema = z.object({
-  APP_URL: z.url().default("http://localhost:3000"),
-  DEMO_MODE: boolish(true),
-
-  FIREBASE_ADMIN_PROJECT_ID: z.string().min(1).default("civic-pulse-4a203"),
-  FIREBASE_ADMIN_CLIENT_EMAIL: z.string().optional(),
-  FIREBASE_ADMIN_PRIVATE_KEY: z
-    .string()
-    .optional()
-    .transform((k) => (k ? k.replace(/\\n/g, "\n") : undefined)),
-  SESSION_COOKIE_NAME: z.string().min(1).default("__session"),
-  SESSION_MAX_AGE_DAYS: z.coerce.number().int().positive().default(5),
-
-  GEMINI_API_KEY: z.string().min(1),
-  GEMINI_MODEL_PRIMARY: z.string().min(1).default("gemini-3.8-flash"),
-  GEMINI_MODEL_FALLBACK: z.string().min(1).default("gemini-3.5-flash-lite"),
-  GEMINI_MODEL_EMBEDDING: z.string().min(1).default("gemini-embedding-001"),
-  AI_MODE: z.enum(["live", "stub"]).default("live"),
-  ANALYSIS_TOKEN_SECRET: z.string().min(32),
-
-  CLOUDINARY_API_KEY: z.string().optional(),
-  CLOUDINARY_API_SECRET: z.string().optional(),
-
-  GEOCODER_BASE_URL: z.url().default("https://nominatim.openstreetmap.org"),
-  GEOCODER_CONTACT_EMAIL: z.string().optional(),
-
-  DEMO_CITIZEN_EMAIL: z.email().default("citizen@demo.civicpulse.invalid"),
-  DEMO_AUTHORITY_EMAIL: z.email().default("roads@demo.civicpulse.invalid"),
-  DEMO_ADMIN_EMAIL: z.email().default("admin@demo.civicpulse.invalid"),
-  DEMO_PASSWORD: z.string().optional(),
-
-  FEATURE_UPLOADS: boolish(false),
-  FEATURE_PUSH: boolish(false),
-  FEATURE_REVERSE_GEOCODE: boolish(false),
-  FEATURE_APP_CHECK: boolish(false),
-
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-});
-
-export type ServerEnv = z.infer<typeof serverSchema>;
-
-let cached: ServerEnv | null = null;
-
 export function getServerEnv(): ServerEnv {
   if (cached) return cached;
-  const parsed = serverSchema.safeParse({
+  const parsed = serverEnvSchema.safeParse({
     APP_URL: process.env.APP_URL,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     DEMO_MODE: process.env.DEMO_MODE,
+    NEXT_PUBLIC_DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
     FIREBASE_ADMIN_PROJECT_ID: process.env.FIREBASE_ADMIN_PROJECT_ID,
     FIREBASE_ADMIN_CLIENT_EMAIL: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
     FIREBASE_ADMIN_PRIVATE_KEY: process.env.FIREBASE_ADMIN_PRIVATE_KEY,
@@ -79,6 +37,8 @@ export function getServerEnv(): ServerEnv {
     DEMO_AUTHORITY_EMAIL: process.env.DEMO_AUTHORITY_EMAIL,
     DEMO_ADMIN_EMAIL: process.env.DEMO_ADMIN_EMAIL,
     DEMO_PASSWORD: process.env.DEMO_PASSWORD,
+    DEMO_ADMIN_PASSWORD: process.env.DEMO_ADMIN_PASSWORD,
+    CRON_SECRET: process.env.CRON_SECRET,
     FEATURE_UPLOADS: process.env.FEATURE_UPLOADS,
     FEATURE_PUSH: process.env.FEATURE_PUSH,
     FEATURE_REVERSE_GEOCODE: process.env.FEATURE_REVERSE_GEOCODE,

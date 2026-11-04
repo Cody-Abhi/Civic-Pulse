@@ -11,41 +11,19 @@
  * guard, so they can never be pulled into a client component.
  */
 import { z } from "zod";
+import { clientEnvSchema, type ClientEnv } from "./env-schema";
 
-const boolish = (def: boolean) =>
-  z
-    .string()
-    .optional()
-    .transform((v) => (v === undefined ? def : v === "true" || v === "1"));
-
-const clientSchema = z.object({
-  APP_URL: z.url().default("http://localhost:3000"),
-  CITY_ID: z.string().min(1).default("blr"),
-  CITY_NAME: z.string().min(1).default("Bengaluru"),
-  DEMO_MODE: boolish(true),
-  FIREBASE_API_KEY: z.string().min(1).optional(),
-  FIREBASE_AUTH_DOMAIN: z.string().min(1).optional(),
-  FIREBASE_PROJECT_ID: z.string().min(1).optional(),
-  FIREBASE_APP_ID: z.string().min(1).optional(),
-  FIREBASE_MESSAGING_SENDER_ID: z.string().min(1).optional(),
-  FIREBASE_STORAGE_BUCKET: z.string().optional(),
-  FIREBASE_MEASUREMENT_ID: z.string().optional(),
-  FIREBASE_DATABASE_URL: z.string().optional(),
-  FIREBASE_VAPID_KEY: z.string().optional(),
-  RECAPTCHA_SITE_KEY: z.string().optional(),
-  USE_EMULATORS: boolish(false),
-  CLOUDINARY_CLOUD_NAME: z.string().optional(),
-});
-
-export type ClientEnv = z.infer<typeof clientSchema>;
+export type { ClientEnv } from "./env-schema";
 
 function readClientEnv(): ClientEnv {
   // Static references required for Next.js inlining — do not refactor into a loop.
-  const parsed = clientSchema.safeParse({
+  const parsed = clientEnvSchema.safeParse({
     APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     CITY_ID: process.env.NEXT_PUBLIC_CITY_ID,
     CITY_NAME: process.env.NEXT_PUBLIC_CITY_NAME,
-    DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
+    DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE || process.env.DEMO_MODE,
+    NEXT_PUBLIC_DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
     FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
     FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,

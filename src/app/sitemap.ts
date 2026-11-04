@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.APP_URL || "https://civicpulse.vercel.app";
+  const baseUrl = process.env.APP_URL || "https://<your-vercel-domain>";
   const now = new Date();
 
   const publicRoutes = [

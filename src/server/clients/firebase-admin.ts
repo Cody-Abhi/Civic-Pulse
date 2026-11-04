@@ -3,12 +3,15 @@ import { initializeApp, getApps, cert, type App } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { getServerEnv } from "@/lib/server-env";
+import { parsePrivateKey } from "@/lib/env-schema";
 
 let adminApp: App | null = null;
 
 /**
  * Initializes and returns the Firebase Admin SDK singleton.
  * Validates server credentials lazily upon first use.
+ * Robustly parses multiline private keys with newline normalization
+ * and quote stripping to prevent OpenSSL DECODER failures.
  */
 export function getAdminApp(): App {
   if (adminApp) {
@@ -22,16 +25,22 @@ export function getAdminApp(): App {
   }
 
   const env = getServerEnv();
+  const privateKey = parsePrivateKey(env.FIREBASE_ADMIN_PRIVATE_KEY);
 
-  if (env.FIREBASE_ADMIN_CLIENT_EMAIL && env.FIREBASE_ADMIN_PRIVATE_KEY) {
+  if (env.FIREBASE_ADMIN_CLIENT_EMAIL && privateKey) {
     adminApp = initializeApp({
       credential: cert({
         projectId: env.FIREBASE_ADMIN_PROJECT_ID,
         clientEmail: env.FIREBASE_ADMIN_CLIENT_EMAIL,
-        privateKey: env.FIREBASE_ADMIN_PRIVATE_KEY,
+        privateKey,
       }),
     });
   } else {
+    if (env.NODE_ENV === "production" && !process.env.FIRESTORE_EMULATOR_HOST) {
+      console.warn(
+        "⚠️ Warning: Initializing Firebase Admin without service account credentials in production.",
+      );
+    }
     adminApp = initializeApp({
       projectId: env.FIREBASE_ADMIN_PROJECT_ID,
     });

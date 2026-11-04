@@ -5,16 +5,28 @@ import * as path from "path";
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-if (!process.env.FIRESTORE_EMULATOR_HOST) {
-  process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
-}
-if (!process.env.FIREBASE_AUTH_EMULATOR_HOST) {
-  process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
+const isProd =
+  process.env.NODE_ENV === "production" ||
+  process.argv.includes("--prod") ||
+  Boolean(
+    process.env.FIREBASE_ADMIN_PRIVATE_KEY &&
+      !process.env.FIRESTORE_EMULATOR_HOST &&
+      process.env.NEXT_PUBLIC_USE_EMULATORS !== "true",
+  );
+
+if (!isProd) {
+  if (!process.env.FIRESTORE_EMULATOR_HOST) {
+    process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
+  }
+  if (!process.env.FIREBASE_AUTH_EMULATOR_HOST) {
+    process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
+  }
 }
 
-import { initializeApp, getApps, type App } from "firebase-admin/app";
+import { initializeApp, getApps, cert, type App } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { parsePrivateKey } from "../../src/lib/env-schema";
 import { computePriority } from "../../src/domain/priority";
 import {
   CATEGORY_CONFIG,
@@ -39,9 +51,23 @@ import type { MapSnapshotPoint } from "../../src/server/repositories/complaints.
 
 let app: App;
 if (getApps().length === 0) {
-  app = initializeApp({
-    projectId: process.env.FIREBASE_ADMIN_PROJECT_ID || "civic-pulse-4a203",
-  });
+  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID || "civic-pulse-4a203";
+  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
+  const privateKey = parsePrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY);
+
+  if (clientEmail && privateKey) {
+    app = initializeApp({
+      credential: cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      }),
+    });
+  } else {
+    app = initializeApp({
+      projectId,
+    });
+  }
 } else {
   app = getApps()[0]!;
 }
@@ -51,6 +77,8 @@ const firestore: Firestore = getFirestore(app);
 
 const TOTAL_COMPLAINTS = 240;
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "CivicPulseDemo2026!";
+const DEMO_ADMIN_PASSWORD =
+  process.env.DEMO_ADMIN_PASSWORD || process.env.DEMO_PASSWORD || "CivicPulseDemo2026!";
 
 const WARDS = [
   { id: "ward-150-bellandur", name: "Bellandur", lat: 12.9304, lng: 77.6784 },
@@ -434,12 +462,13 @@ export async function runSeed(): Promise<number> {
   // 1. Seed Users in Firebase Auth & Firestore
   console.log("Creating/updating Firebase Auth users & Firestore profiles...");
   for (const u of SEED_USERS) {
+    const userPassword = u.role === "admin" ? DEMO_ADMIN_PASSWORD : DEMO_PASSWORD;
     try {
       try {
         await auth.getUser(u.uid);
         await auth.updateUser(u.uid, {
           email: u.email,
-          password: DEMO_PASSWORD,
+          password: userPassword,
           displayName: u.displayName,
           emailVerified: true,
         });
@@ -447,7 +476,7 @@ export async function runSeed(): Promise<number> {
         await auth.createUser({
           uid: u.uid,
           email: u.email,
-          password: DEMO_PASSWORD,
+          password: userPassword,
           displayName: u.displayName,
           emailVerified: true,
         });

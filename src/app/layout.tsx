@@ -4,8 +4,17 @@ import { GeistMono } from "geist/font/mono";
 import { BRAND_PRIMARY_HEX } from "@/lib/brand";
 import "./globals.css";
 
+function getMetadataBase(): URL {
+  const url = process.env.APP_URL || "https://<your-vercel-domain>";
+  try {
+    return new URL(url);
+  } catch {
+    return new URL("http://localhost:3000");
+  }
+}
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_URL || "https://civicpulse.vercel.app"),
+  metadataBase: getMetadataBase(),
   title: {
     default: "CivicPulse — Transparent Civic Action",
     template: "%s · CivicPulse",
