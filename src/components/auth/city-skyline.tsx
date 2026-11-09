@@ -207,7 +207,7 @@ export function CitySkyline({ className }: { className?: string }) {
 
         {/* Feature highlights */}
         {[
-          { x: 200, y: 370, icon: "chart" as const, label: "Real-Time\nInsights" },
+          { x: 200, y: 370, icon: "chart" as const, label: "Grounded\nInsights" },
           { x: 400, y: 360, icon: "pin" as const, label: "Track Issues\non Map" },
           { x: 600, y: 370, icon: "bolt" as const, label: "Faster\nResolution" },
         ].map((feat, i) => (

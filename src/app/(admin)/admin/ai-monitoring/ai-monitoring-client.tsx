@@ -30,9 +30,15 @@ interface AiMetrics {
 
 interface AiMonitoringClientProps {
   initialMetrics: AiMetrics;
+  modelConfig?: {
+    primary: string;
+    fallback: string;
+    embedding: string;
+  };
 }
 
-export function AiMonitoringClient({ initialMetrics }: AiMonitoringClientProps) {
+export function AiMonitoringClient({ initialMetrics, modelConfig }: AiMonitoringClientProps) {
+  const primaryModel = modelConfig?.primary || "gemini-3.8-flash";
   const [metrics, setMetrics] = React.useState<AiMetrics>(initialMetrics);
   const [isToggling, setIsToggling] = React.useState(false);
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
@@ -59,7 +65,7 @@ export function AiMonitoringClient({ initialMetrics }: AiMonitoringClientProps) 
       setStatusMessage(
         data.paused
           ? "AI processing paused. System has engaged the deterministic keyword classifier fallback."
-          : "AI processing resumed. Gemini 2.5 Flash active for automatic triage.",
+          : `AI processing resumed. ${primaryModel} active for automatic triage.`,
       );
     } catch (err: unknown) {
       setStatusMessage(err instanceof Error ? err.message : String(err));
@@ -88,7 +94,7 @@ export function AiMonitoringClient({ initialMetrics }: AiMonitoringClientProps) 
     {
       label: "Tokens consumed today",
       value: metrics.tokensTotalToday,
-      hint: "Gemini 2.5 Flash",
+      hint: primaryModel,
     },
   ];
 
@@ -152,7 +158,7 @@ export function AiMonitoringClient({ initialMetrics }: AiMonitoringClientProps) 
         <div className="lg:col-span-6">
           <ChartFrame
             title="Inference latency distribution"
-            description="Percentile breakdown for server-side Gemini 2.5 Flash calls"
+            description={`Percentile breakdown for server-side ${primaryModel} calls`}
             table={{
               columns: ["Percentile", "Latency"],
               rows: [
@@ -272,13 +278,38 @@ export function AiMonitoringClient({ initialMetrics }: AiMonitoringClientProps) 
                           : "bg-amber-100 text-amber-800"
                       }`}
                     >
-                      {call.source === "gemini" ? "Gemini 2.5 Flash" : "Keyword Fallback"}
+                      {call.source === "gemini" ? call.model || primaryModel : "Keyword Fallback"}
                     </span>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Model Configuration Card (PRD §31, Block E) */}
+      <div className="rounded-xl border border-border bg-surface-card p-5 shadow-xs">
+        <h2 className="mb-2 text-base font-semibold text-foreground">Active model configuration</h2>
+        <p className="text-xs text-muted-foreground mb-4">
+          Read-only display of models dynamically provisioned from server environment variables.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="rounded-lg border border-border bg-surface p-3.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Primary Classifier</span>
+            <p className="font-mono text-xs font-bold text-foreground mt-1">{primaryModel}</p>
+            <span className="text-[10px] text-muted-foreground">Multimodal structured intake &amp; triage</span>
+          </div>
+          <div className="rounded-lg border border-border bg-surface p-3.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Circuit Fallback</span>
+            <p className="font-mono text-xs font-bold text-foreground mt-1">{modelConfig?.fallback || "gemini-3.5-flash-lite"}</p>
+            <span className="text-[10px] text-muted-foreground">Rate limit &amp; latency failover</span>
+          </div>
+          <div className="rounded-lg border border-border bg-surface p-3.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Semantic Embeddings</span>
+            <p className="font-mono text-xs font-bold text-foreground mt-1">{modelConfig?.embedding || "gemini-embedding-001"}</p>
+            <span className="text-[10px] text-muted-foreground">768-dim spatial duplicate radar</span>
+          </div>
         </div>
       </div>
     </div>

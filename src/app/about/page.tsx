@@ -113,7 +113,7 @@ export default function AboutPage() {
         <div className="flex flex-col gap-3 my-6">
           <div className="rounded-md border border-border bg-surface p-4">
             <span className="text-xs font-bold text-primary uppercase tracking-wider">Step 1 · Intake &amp; Local Radar</span>
-            <h3 className="text-base font-semibold text-ink mt-1">Smart Intake with Real-time Duplicate Radar</h3>
+            <h3 className="text-base font-semibold text-ink mt-1">Smart Intake with Spatial Duplicate Radar</h3>
             <p className="text-sm text-muted mt-1">
               As citizens describe issues and place map pins, our spatial-temporal engine surfaces nearby open complaints, allowing citizens to upvote existing issues rather than fragmenting municipal queues.
             </p>
@@ -123,7 +123,7 @@ export default function AboutPage() {
             <span className="text-xs font-bold text-primary uppercase tracking-wider">Step 2 · Advisory AI Structuring</span>
             <h3 className="text-base font-semibold text-ink mt-1">PII-Sanitized Gemini Classification</h3>
             <p className="text-sm text-muted mt-1">
-              Server-side Gemini 2.5 Flash analyzes sanitized text to suggest departmental category, summary, severity indicator, and hazard flags under strict schema constraints.
+              Server-side Gemini models analyze sanitized text to suggest departmental category, summary, severity indicator, and hazard flags under strict schema constraints.
             </p>
           </div>
 
@@ -220,7 +220,7 @@ export default function AboutPage() {
         </div>
 
         <p className="text-xs text-muted italic mb-6">
-          Showing default weights. Municipal administrators can adjust weights within strict bounds (PRD §30) without breaking auditability.
+          Showing default weights. Municipal administrators can adjust weights within strict bounds while maintaining full auditability.
         </p>
 
         <h3 className="text-base font-semibold text-ink mb-3">Example Priority Receipt</h3>
@@ -261,8 +261,8 @@ export default function AboutPage() {
           CivicPulse uses Google Gemini models strictly as an <strong>advisory structuring assistant</strong>:
         </p>
         <ul className="list-disc pl-5 text-sm md:text-base text-muted space-y-2 mb-4">
-          <li><strong>Primary Model:</strong> <code>gemini-2.5-flash</code> with structured JSON schema output for rapid categorization, summarization, and hazard flag detection.</li>
-          <li><strong>Fallback Architecture:</strong> <code>gemini-2.5-flash-lite</code> activates automatically on rate limits or connectivity disruptions. If all AI calls fail, an offline heuristic regex classifier ensures zero downtime.</li>
+          <li><strong>Primary Model:</strong> <code>gemini-3.8-flash</code> (configurable via <code>GEMINI_MODEL_PRIMARY</code>) with structured JSON schema output for rapid categorization, summarization, and hazard flag detection.</li>
+          <li><strong>Fallback Architecture:</strong> <code>gemini-3.5-flash-lite</code> (configurable via <code>GEMINI_MODEL_FALLBACK</code>) activates automatically on rate limits or connectivity disruptions. If all AI calls fail, an offline heuristic regex classifier ensures continuous unblocked triage.</li>
           <li><strong>Zero Client AI Calls:</strong> All Gemini requests execute inside trusted server-side Next.js route handlers. API keys are never exposed in browser bundles.</li>
         </ul>
       </section>
@@ -304,6 +304,9 @@ export default function AboutPage() {
           </div>
           <div className="rounded-md border border-border bg-surface p-3.5 text-xs">
             <span className="font-semibold text-ink">Demonstration Data</span> — 240 synthetic complaints generated for testing purposes, clearly marked across all views with the &ldquo;Demo data&rdquo; badge.
+          </div>
+          <div className="rounded-md border border-border bg-surface p-3.5 text-xs">
+            <span className="font-semibold text-ink">Adaption Multilingual Evaluation</span> — Offline translation and paraphrase augmentation dataset synthesized via Adaption Labs SDK for evaluating Hindi and Kannada classification accuracy. Adaption is evaluated offline and is not invoked at runtime.
           </div>
         </div>
       </section>

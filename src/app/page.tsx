@@ -35,7 +35,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "AI-Powered Civic Action Platform",
   description:
-    "CivicPulse AI turns free-text civic complaints into structured, located, prioritised records with transparent 7-factor priority receipts and real-time municipal routing.",
+    "CivicPulse AI turns free-text civic complaints into structured, located, prioritised records with transparent 7-factor priority receipts and intelligent municipal routing.",
 };
 
 // Realistic demonstration receipt for UI-01 Hero (§29.5)

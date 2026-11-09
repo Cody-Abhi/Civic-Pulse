@@ -377,7 +377,7 @@ export default function RegisterPage() {
 
             <p className="mt-4 text-base leading-relaxed text-white/80 lg:text-lg">
               Report local hazards, upvote existing neighborhood issues on the Duplicate Radar, and
-              receive real-time updates as ward teams resolve them.
+              receive live updates and notifications as ward teams resolve them.
             </p>
 
             <div className="mt-8 flex flex-col gap-3">

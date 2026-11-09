@@ -243,7 +243,7 @@ export function PublicComplaintClient({ complaint: initialComplaint }: PublicCom
             <div className="rounded-xl border border-emerald-300 bg-emerald-50/50 p-5 shadow-xs flex flex-col gap-2">
               <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
                 <Icon icon={CheckCircle2} size={16} />
-                <span>Official Resolution Summary</span>
+                <span>Department resolution note</span>
               </div>
               <p className="text-sm text-emerald-900 leading-relaxed">
                 {complaint.resolution.note}

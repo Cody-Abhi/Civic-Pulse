@@ -28,7 +28,7 @@ const TOURS: Record<Role, { title: string; steps: TourStep[] }> = {
       {
         id: "ai-suggestion",
         label: "See AI suggestion",
-        description: "Real-time multimodal classification",
+        description: "Advisory multimodal classification",
         href: "/citizen/complaints/new",
         pathMatch: (p) => p.includes("/citizen/complaints/new"),
       },

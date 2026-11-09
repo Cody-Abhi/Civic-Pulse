@@ -1,153 +1,159 @@
 # CivicPulse AI
 
-**Turning Citizen Voices into Intelligent City Action.**
+> **Turning Citizen Voices into Intelligent City Action with Explainable Priority Receipts & Spatial Duplicate Radar.**
 
-CivicPulse AI turns a free-text civic report (garbage, potholes, streetlights,
-water leaks, drainage, sanitation…) into a structured, located, de-duplicated
-and **explainably prioritised** civic record in seconds — then tracks it through
-to resolution.
+CivicPulse AI transforms unstructured citizen grievances (potholes, garbage, water leaks, broken streetlights, stormwater drainage) into structured, localized, deduplicated, and **transparently prioritized** civic records in seconds — tracking each issue through to verified department resolution.
 
-> **Independent civic-tech prototype — not affiliated with any government body.**
-> All on-screen KPIs in the demo are computed from synthetic data labelled
-> "Demo data". Real-world statistics appear only where cited (see
-> [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md)).
+> **Independent Civic-Tech Prototype**: Built for modern municipal grievance triage. Not affiliated with, endorsed by, or operated on behalf of the BBMP or any government body. Demonstrations use synthetic data clearly badged with "Demo data".
 
 ---
 
-## Live Production Deployment & Demo Accounts
+## Live Application & Judge Mode
 
-- **Live Application URL**: [https://<your-vercel-domain>](https://<your-vercel-domain>)
-- **GitHub Repository**: [https://github.com/Cody-Abhi/Civic-Pulse](https://github.com/Cody-Abhi/Civic-Pulse)
+- **Live URL**: [https://<your-vercel-domain>](https://<your-vercel-domain>)
+- **Repository**: [https://github.com/Cody-Abhi/Civic-Pulse](https://github.com/Cody-Abhi/Civic-Pulse)
 
-For testing and grading without manual registration, seeded demo credentials are pre-configured:
+### Try It as a Judge (1-Click Instant Access)
 
-| Role | Account Email | Sign-In Method | Workspace Capabilities & Notes |
+On the **Landing Page** (`/`) or **Sign In Page** (`/login`), click any role card in the **"Try it as a judge"** panel to enter immediately without typing credentials:
+
+| Judge Role | 1-Click Access | Guided Tour Checklist | Guardrails |
 | :--- | :--- | :--- | :--- |
-| **Citizen** | `citizen@demo.civicpulse.invalid` | 1-click on `/login` | 6-step complaint wizard, Priority Receipt, duplicate radar, status tracking, withdrawal (T2), resolution feedback (T8/T9). |
-| **Authority** | `roads@demo.civicpulse.invalid` | 1-click on `/login` | Department triage queue, priority matrix, SLA countdown, resolution evidence upload, status transitions. |
-| **Administrator** | `admin@demo.civicpulse.invalid` | Configured via `DEMO_ADMIN_PASSWORD` | Governance dashboard, role & department management, algorithm weights adjustment, audit logs export, AI rate limiting & pause. (Admin credentials are not served over public APIs; manual password entry required). |
+| **Citizen Demo** | 1-click on `/` or `/login` | Report an issue &rarr; AI category suggestion &rarr; Duplicate radar &rarr; Priority Receipt | Auto-creates `isDemoSession` records |
+| **Roads Authority** | 1-click on `/` or `/login` | Open top-priority complaint &rarr; Confirm duplicate &rarr; Resolve with photo evidence | Department-scoped queue |
+| **Admin (View-Only)** | 1-click on `/` or `/login` | AI telemetry monitoring &rarr; Audit trail inspection &rarr; Grounded analytics insight | Mutations disabled via HTTP 403 & UI tooltips |
 
-> On the `/login` page, click the **Citizen Demo** or **Roads Authority Demo** card for 1-click credential population and authentication.
->
-> **Demo Data Reset Guard**: The demo database reset route requires a typed confirmation (`"RESET DEMO"`) and automatically logs a non-repudiable audit event recording the actor UID, timestamp, and client IP.
+Each judge session mounts an interactive, collapsible, and dismissible **Guided Tour Checklist** that tracks progress across routes. Ephemeral demo documents are automatically purged nightly via Vercel Cron without touching baseline seed fixtures.
 
 ---
 
-## Three Differentiators
+## Three Core Differentiators
 
-1. **Priority Receipt** — every complaint carries a transparent, itemised 0–100 score. Deterministic, formulaic, and auditable (§29), never an opaque black box.
-2. **Duplicate Radar** — similar nearby reports surface *before* submission; citizens "Add my voice" instead of filing duplicate tickets. Authorities confirm links; nothing auto-merges without human oversight.
-3. **Ward Pulse Map + Grounded AI Insights** — live hotspot map with MapLibre GL and Gemini insight briefs that cite the exact metrics they analyze.
+### 1. Explainable Priority Receipt (0–100 Formula)
+Priority is **never decided by an opaque LLM**. An auditable mathematical formula weighs 7 transparent dimensions: Severity (25%), Safety Hazard (20%), Citizen Reports (15%), Waiting Time / SLA (15%), Affected Scale (10%), Cluster Hotspot (10%), and Seasonal Vulnerability (5%). Every complaint renders an itemized receipt that recalculates dynamically as citizens add their voice.
 
----
+![Priority Receipt](docs/screenshots/block_c/02_citizen_detail_live_receipt_1280.png)
 
-## Technology Stack
+### 2. Spatial Duplicate Radar ("Add My Voice")
+Before duplicate tickets flood municipal departments, the local radar searches a 200m spatial-temporal window. Citizens click **"Add my voice"** to upvote existing issues rather than fragmenting queues. Authorities confirm duplicate links before merging.
 
-| Layer | Technology |
-| :--- | :--- |
-| **Frontend** | Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind CSS v4 · Modern Civic Minimalism teal design tokens (`--cp-*`) · Geist Sans & Mono · Lucide React · Accessible Radix primitives |
-| **Backend** | Firebase Auth + Cloud Firestore (Admin SDK) · Centralized `withApi` HTTP middleware (`/src/server/http/with-api.ts`) · Typed Repositories · Atomic transactions |
-| **AI Processing** | Server-side `@google/genai` (Gemini 2.5 Flash) with strict deterministic fallback, HMAC analysis token verification, and administrative pause kill-switch |
-| **Geospatial & Mapping** | MapLibre GL JS + OpenFreeMap (vector tiles) + DataMeet Bengaluru Ward boundary GeoJSON |
-| **Deployment** | Vercel (Next.js Edge/Node runtime) + Firebase Emulator Suite for local development & automated test suites |
+![Duplicate Radar](docs/screenshots/block_c/03_citizen_duplicate_voice_supported_1280.png)
 
----
+### 3. Ward Pulse Map + Grounded AI Insights
+Live geospatial visualization powered by MapLibre GL and vector basemaps. Administrators receive Gemini insight summaries that explicitly ground every recommendation in verifiable city metrics.
 
-## Architecture Guarantees & Security
-
-- **Zero Client Writes to Firestore**: All database mutations flow through authenticated route handlers guarded by the Firebase Admin SDK. Client-side security rules enforce read-only projections.
-- **Centralized API Security (`withApi`)**: Strict origin validation (`Origin === APP_URL`), session cookie verification, role-based authorization, Zod body validation, and RFC 7807 error envelopes.
-- **State Machine Integrity**: Status changes are validated against the 10 transition rules (§21.5), rejecting illegal or concurrent state modifications with HTTP 409 Conflict.
-- **Pure Domain Core (`src/domain/`)**: Completely decoupled from framework dependencies and third-party libraries for zero-side-effect testability.
-- **Comprehensive Accessibility**: Built to WCAG 2.1 AA standards with zero Axe core violations, high-contrast typography, keyboard navigation, and responsive scaling from 360px to 1440px.
+![Grounded AI Insights](docs/screenshots/block_c/05_grounded_ai_insight_metrics_1280.png)
 
 ---
 
-## Getting Started
+## System Architecture
+
+```mermaid
+flowchart TD
+    subgraph Client ["Client Layer (Next.js 16 App Router · React 19)"]
+        Landing["Landing & Explore Map"]
+        Citizen["Citizen Flow (Wizard + Priority Receipt)"]
+        Authority["Authority Workspace (Queue + Triage)"]
+        Admin["Admin Governance (AI Telemetry + Audit)"]
+    end
+
+    subgraph Security ["Security & Routing Boundary"]
+        Proxy["Next.js Middleware (Session & Role Routing)"]
+        WithApi["withApi Guard (Origin + Session + RBAC + View-Only)"]
+    end
+
+    subgraph Server ["Server-Side Services"]
+        PiiScrubber["Regex PII Redactor"]
+        GeminiService["Google Gemini Advisory Pipeline (gemini-3.8-flash)"]
+        FallbackEngine["Deterministic Heuristic Keyword Classifier"]
+        PriorityEngine["Deterministic 7-Factor Priority Formula"]
+        DuplicateRadar["Geohash Proximity & Temporal Matcher"]
+    end
+
+    subgraph Data ["Persistence & Projections"]
+        FirebaseAuth["Firebase Auth (Custom Claims)"]
+        FirestoreAdmin["Cloud Firestore (Admin SDK)"]
+        PublicProj["publicComplaints Projection (No PII)"]
+    end
+
+    Client --> Proxy --> WithApi
+    WithApi --> PiiScrubber --> GeminiService
+    GeminiService -. Timeout / Fallback .-> FallbackEngine
+    WithApi --> PriorityEngine
+    WithApi --> DuplicateRadar
+    WithApi --> FirestoreAdmin
+    FirestoreAdmin --> PublicProj
+    WithApi --> FirebaseAuth
+```
+
+### Architectural Guarantees
+- **Zero Client Direct Writes to Firestore**: All mutations pass through authenticated route handlers guarded by Firebase Admin SDK.
+- **Privacy by Design**: Indian phone numbers, emails, and street addresses are scrubbed before any LLM processing. Public feeds read from a dedicated `publicComplaints` projection with zero citizen identities.
+- **Circuit Breakers & Graceful Degradation**: 8s strict timeout on Gemini inferences with deterministic regex fallback. Administrative safety switch allows immediate manual fallback enforcement.
+- **View-Only Demo Isolation**: Demo judge accounts are strictly forbidden from mutating system state via server-side 403 enforcement.
+
+---
+
+## Getting Started Locally
 
 ### 1. Prerequisites
-- Node.js 20+
-- pnpm 9+
-- Java JRE 11+ (required for Firebase Local Emulators)
+- **Node.js**: v20+
+- **pnpm**: v9+
+- **Java JRE**: 11+ (for Firebase Local Emulators)
 
-### 2. Installation
+### 2. Setup & Installation
 ```bash
 git clone https://github.com/Cody-Abhi/Civic-Pulse.git
 cd Civic-Pulse
 pnpm install
-```
-
-### 3. Environment Configuration
-Copy `.env.example` to `.env.local` and configure your credentials:
-```bash
 cp .env.example .env.local
 ```
 
-### 4. Local Development with Emulators
-Start the Firebase Auth & Firestore emulators, seed synthetic demo data, and launch Next.js:
+### 3. Run Development Stack
 ```bash
-# Terminal 1: Start Firebase local emulators
+# Terminal 1: Start Firebase local Auth & Firestore emulators
 pnpm exec firebase emulators:start --only auth,firestore
 
-# Terminal 2: Seed synthetic complaints, departments, and metrics
+# Terminal 2: Seed synthetic complaints, departments & metrics
 pnpm seed
 
-# Terminal 3: Launch Next.js dev server
+# Terminal 3: Start Next.js development server
 pnpm dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## Verification & Test Suites
+## Verification & Quality Gates
 
-CivicPulse includes a rigorous, multi-tiered partitioned test suite covering pure unit tests, domain logic, security rules, integration contracts, and end-to-end user journeys:
+CivicPulse enforces strict, automated quality gates:
 
 ```bash
-# Typecheck (0 errors)
+# Typecheck (0 TypeScript errors)
 pnpm typecheck
 
-# Linting & Token Guard (0 errors, 0 warnings)
+# Linting & Token Guard (0 ESLint errors/warnings)
 pnpm lint
 
-# Pure Unit Tests (Fast, zero network, zero hang: 134 tests across 10 files)
+# Unit Test Suite (144 unit tests across 12 test suites)
 pnpm test
-# or explicitly:
-pnpm run test:unit
 
-# Emulator-backed Integration Tests (requires Java for Firebase Emulators)
-pnpm run test:integration
+# Security Bundle Scanner (Asserts zero credentials leaked into client bundles)
+pnpm check:bundle-secrets
 
-# Firestore Security Rules Tests (12 security test cases)
-pnpm run test:rules
+# Environment Contract Check (Asserts zero drift between Zod schema & env)
+pnpm check:env
 
-# End-to-End Responsive & WCAG 2.1 AA Journeys
-pnpm run test:e2e
-
-# Fast Desktop E2E Journeys (desktop-1280)
-pnpm run test:e2e:desktop
-
-# Automated Dual-Viewport Live Verification (360px & 1280px screenshots, 0 overflow, 0 console errors)
-pnpm run verify:live
-
-# Target Live Cloud Deployment on Vercel:
-# PLAYWRIGHT_BASE_URL="https://<your-vercel-domain>.vercel.app" pnpm run verify:live
-# PLAYWRIGHT_BASE_URL="https://<your-vercel-domain>.vercel.app" pnpm run test:e2e:desktop
-
-# Zero-404 Link Crawler E2E (Crawls all role routes with zero 404s)
-pnpm exec playwright test tests/e2e/link-crawler.spec.ts
-
-# Production Build
+# Full Next.js Production Build
 pnpm build
+
+# Automated Responsive Browser Verification (360px & 1280px screenshots)
+node scripts/verify-block-d-live.mjs
 ```
 
 ---
 
-## Production Deployment to Vercel
-
-1. Push your repository to GitHub.
-2. Import the project in the [Vercel Dashboard](https://vercel.com).
-3. Configure the following environment variables in Vercel:
+## Deployment to Vercel
 
 <!-- BEGIN:vercel-env -->
 | Environment Variable | Description | Exposure |
@@ -171,13 +177,17 @@ pnpm build
 | `CRON_SECRET` | Secret bearer token for Vercel Cron endpoints (min 16 chars) | Server Only (Secret) |
 <!-- END:vercel-env -->
 
-4. Deploy with Vercel CLI or Git push:
+Deploy production build:
 ```bash
 vercel --prod
 ```
 
 ---
 
-## Licence & Attributions
+## Data Sources & Attributions
 
-Code licensed under [MIT](LICENSE). Ward boundaries © DataMeet (CC BY 4.0); vector base map tiles © OpenFreeMap / © OpenStreetMap contributors. See [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) for complete data citations.
+- **Ward Boundaries**: DataMeet Municipal Spatial Data (CC BY 4.0 International). 198 BBMP ward boundary polygons optimized for spatial resolution.
+- **Basemap Vector Tiles**: OpenFreeMap powered by OpenStreetMap contributors (ODbL).
+- **Municipal Grievance Baseline**: OpenCity.in analysis of BBMP Grievance Redressal statistics (2025 public report).
+- **Multilingual Evaluation**: Evaluated offline on Hindi and Kannada civic complaint benchmarks generated with the Adaption Labs SDK.
+- **License**: Code released under the [MIT License](LICENSE).

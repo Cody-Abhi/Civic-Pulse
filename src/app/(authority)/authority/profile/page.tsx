@@ -128,10 +128,10 @@ export default function AuthorityProfilePage() {
                 </p>
               </div>
 
-              {/* Official Email */}
+              {/* Work Email */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted">
-                  Official Email
+                  Work email
                 </label>
                 <div className="flex items-center gap-2 rounded-md border border-border bg-surface-muted px-3.5 py-2.5 text-sm text-ink">
                   <Mail className="h-4 w-4 text-muted" aria-hidden="true" />

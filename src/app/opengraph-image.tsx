@@ -75,7 +75,7 @@ export default async function Image() {
               maxWidth: "800px",
             }}
           >
-            Independent civic-tech prototype with transparent 7-factor priority receipts and real-time municipal routing.
+            Independent civic-tech prototype with transparent 7-factor priority receipts and intelligent municipal routing.
           </div>
         </div>
 

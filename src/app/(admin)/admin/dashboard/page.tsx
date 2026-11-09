@@ -14,6 +14,7 @@ import {
   getAuditLogs,
   getAiMonitoringMetrics,
 } from "@/server/services/admin";
+import { getServerEnv } from "@/lib/server-env";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminDashboardPage() {
+  const env = getServerEnv();
   const metrics = await getCityMetrics();
   const { total: totalUsers } = await listAdminUsers();
   const departments = await getAdminDepartments();
@@ -159,7 +161,7 @@ export default async function AdminDashboardPage() {
               <div className="flex items-center justify-between">
                 <span className="text-ink-secondary">Gemini model</span>
                 <span className="font-mono text-xs font-medium text-foreground">
-                  gemini-2.5-flash
+                  {env.GEMINI_MODEL_PRIMARY}
                 </span>
               </div>
               <div className="flex items-center justify-between">

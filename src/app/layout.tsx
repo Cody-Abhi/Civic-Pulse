@@ -16,7 +16,7 @@ function getMetadataBase(): URL {
 export const metadata: Metadata = {
   metadataBase: getMetadataBase(),
   title: {
-    default: "CivicPulse — Transparent Civic Action",
+    default: "Civic Action Platform · CivicPulse",
     template: "%s · CivicPulse",
   },
   description:

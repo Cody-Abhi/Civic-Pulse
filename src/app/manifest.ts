@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "CivicPulse AI — Transparent Civic Action",
     short_name: "CivicPulse",
     description:
-      "Turning citizen voices into intelligent municipal action with transparent 7-factor priority receipts and real-time dispatch routing.",
+      "Turning citizen voices into intelligent municipal action with transparent 7-factor priority receipts and intelligent dispatch routing.",
     start_url: "/",
     display: "standalone",
     background_color: BRAND_BG_HEX,
