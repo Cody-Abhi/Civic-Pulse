@@ -25,6 +25,7 @@
     "bootstrap:admin": "tsx scripts/bootstrap-admin.ts",
     "seed": "tsx scripts/seed/seed.ts",
     "check:env": "tsx scripts/check-env.ts",
+    "check:firebase": "tsx scripts/test-firebase.ts",
     "sync:env": "tsx scripts/sync-env.ts",
     "check:bundle-secrets": "tsx scripts/check-bundle-secrets.ts"
   },
