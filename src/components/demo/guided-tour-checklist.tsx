@@ -123,7 +123,10 @@ export function GuidedTourChecklist({ role }: { role: Role }) {
     }
   });
 
-  const [collapsed, setCollapsed] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth < 768;
+  });
   const [completed, setCompleted] = React.useState<string[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -170,7 +173,7 @@ export function GuidedTourChecklist({ role }: { role: Role }) {
     <aside
       aria-label="Judge Guided Tour"
       data-testid="judge-guided-tour"
-      className="fixed bottom-20 md:bottom-4 right-4 z-40 max-w-[calc(100vw-32px)] md:max-w-[340px] w-full rounded-xl border border-primary/20 bg-surface/95 backdrop-blur-md shadow-xl text-ink transition-all"
+      className="fixed bottom-20 md:bottom-4 right-4 md:right-auto md:left-[284px] z-40 max-w-[calc(100vw-32px)] md:max-w-[340px] w-full rounded-xl border border-primary/20 bg-surface/95 backdrop-blur-md shadow-xl text-ink transition-all"
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-2.5 bg-primary/5 rounded-t-xl">

@@ -310,8 +310,8 @@ export function QueueView({
             <DemoBadge />
             <LiveIndicator isLive={isLive} />
             {currentUserDepartmentId && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                <Icon icon={Building2} size={12} />
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-ink">
+                <Icon icon={Building2} size={12} className="text-primary" />
                 <span>{getDepartmentName(currentUserDepartmentId)}</span>
               </span>
             )}

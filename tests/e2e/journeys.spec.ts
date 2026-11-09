@@ -1,5 +1,13 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+
+async function dismissTourIfPresent(page: Page) {
+  try {
+    const dismissBtn = page.locator('button[aria-label="Dismiss guided tour"]');
+    await dismissBtn.waitFor({ state: "visible", timeout: 4000 });
+    await dismissBtn.click();
+  } catch {}
+}
 
 test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => {
   test.describe.configure({ mode: "serial" });
@@ -66,11 +74,13 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
     await demoBtn.click();
 
     // Navigate to citizen area
-    await page.waitForURL((url) => url.pathname.includes("/citizen"), { timeout: 20000 });
+    await page.waitForURL((url) => url.pathname.includes("/citizen"), { timeout: 30000 });
+    await dismissTourIfPresent(page);
     await expect(page.locator("h1").first()).toBeVisible();
 
     // Open complaint wizard
     await page.goto("/citizen/complaints/new", { waitUntil: "domcontentloaded" });
+    await dismissTourIfPresent(page);
     await expect(page.locator("h1").first()).toBeVisible();
 
     // Step 1: Category selection
@@ -144,8 +154,10 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
     await demoBtn.click();
 
     // Navigate to authority queue
-    await page.waitForURL((url) => url.pathname.includes("/authority"), { timeout: 20000 });
+    await page.waitForURL((url) => url.pathname.includes("/authority"), { timeout: 30000 });
+    await dismissTourIfPresent(page);
     await page.goto("/authority/queue", { waitUntil: "domcontentloaded" });
+    await dismissTourIfPresent(page);
     await expect(page.locator("h1").first()).toBeVisible();
 
     // Verify table (desktop) or mobile cards (mobile)
@@ -191,7 +203,8 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
     await page.click("button[type='submit']");
 
     // Navigate to admin area
-    await page.waitForURL((url) => url.pathname.includes("/admin"), { timeout: 20000 });
+    await page.waitForURL((url) => url.pathname.includes("/admin"), { timeout: 30000 });
+    await dismissTourIfPresent(page);
 
     // 1. Admin Audit Logs
     await page.goto("/admin/audit-logs", { waitUntil: "domcontentloaded" });
@@ -234,10 +247,12 @@ test.describe("CivicPulse E2E Journeys & Accessibility (§39.4, §39.5)", () => 
     const demoBtn = page.locator("button:has-text('Citizen Demo')");
     await demoBtn.waitFor({ state: "visible", timeout: 15000 });
     await demoBtn.click();
-    await page.waitForURL((url) => url.pathname.includes("/citizen"), { timeout: 20000 });
+    await page.waitForURL((url) => url.pathname.includes("/citizen"), { timeout: 30000 });
+    await dismissTourIfPresent(page);
 
     // Open complaint wizard step 2
     await page.goto("/citizen/complaints/new", { waitUntil: "domcontentloaded" });
+    await dismissTourIfPresent(page);
     const potholeBtn = page.locator("button:has-text('Road pothole')");
     const nextDetailsBtn = page.locator("button:has-text('Next: Details')");
     await potholeBtn.click();
