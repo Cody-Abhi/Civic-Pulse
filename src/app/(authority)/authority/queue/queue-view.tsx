@@ -21,10 +21,12 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { PriorityBadge } from "@/components/ui/priority-badge";
 import { ReferenceChip } from "@/components/ui/reference-chip";
 import { DemoBadge } from "@/components/ui/demo-badge";
+import { LiveIndicator } from "@/components/ui/live-indicator";
 import { DataTable } from "@/components/data/data-table";
 import type { ColumnDef } from "@/components/data/data-table.types";
 import type { Complaint, ComplaintStatus } from "@/domain/types";
 import { getDepartmentName } from "@/domain/departments";
+import { useRealtimeQueue } from "@/hooks/use-realtime-queue";
 
 interface QueueViewProps {
   initialComplaints: Complaint[];
@@ -70,7 +72,10 @@ export function QueueView({
   currentUserRole,
 }: QueueViewProps) {
   const router = useRouter();
-  const [complaints] = React.useState<Complaint[]>(initialComplaints);
+  const { complaints, isLive } = useRealtimeQueue(
+    initialComplaints,
+    currentUserDepartmentId || (currentUserRole === "admin" ? null : "roads"),
+  );
   const [search, setSearch] = React.useState("");
   const [category, setCategory] = React.useState("ALL");
   const [ward, setWard] = React.useState("All Wards");
@@ -303,6 +308,7 @@ export function QueueView({
               Priority Operational Queue
             </h1>
             <DemoBadge />
+            <LiveIndicator isLive={isLive} />
             {currentUserDepartmentId && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
                 <Icon icon={Building2} size={12} />

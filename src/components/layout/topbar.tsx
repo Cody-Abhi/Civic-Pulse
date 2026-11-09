@@ -5,12 +5,14 @@ import Link from "next/link";
 import { Menu, Bell, User, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Icon } from "@/components/ui/icon";
+import { LiveIndicator } from "@/components/ui/live-indicator";
 import type { Role } from "@/domain/schemas";
 
 export interface TopbarProps {
   title?: string | undefined;
   role?: Role | undefined;
   unreadCount?: number | undefined;
+  isLive?: boolean | undefined;
   onOpenMobileDrawer?: (() => void) | undefined;
   isMobileDrawerOpen?: boolean | undefined;
   className?: string | undefined;
@@ -26,6 +28,7 @@ export function Topbar({
   title,
   role = "citizen",
   unreadCount = 0,
+  isLive = false,
   onOpenMobileDrawer,
   isMobileDrawerOpen = false,
   className,
@@ -56,13 +59,19 @@ export function Topbar({
 
         {/* Page / Portal Title */}
         {title ? (
-          <h2 className="text-base font-semibold tracking-tight text-ink md:text-lg">
-            {title}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold tracking-tight text-ink md:text-lg">
+              {title}
+            </h2>
+            <LiveIndicator isLive={isLive} />
+          </div>
         ) : (
-          <span className="text-xs font-semibold tracking-wider text-muted uppercase">
-            CivicPulse · Bengaluru
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold tracking-wider text-muted uppercase">
+              CivicPulse · Bengaluru
+            </span>
+            <LiveIndicator isLive={isLive} />
+          </div>
         )}
       </div>
 
@@ -86,11 +95,16 @@ export function Topbar({
           aria-label="View notifications"
         >
           <Icon icon={Bell} size={18} />
-          {unreadCount > 0 && (
+          {unreadCount > 0 ? (
             <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
-          )}
+          ) : isLive ? (
+            <span
+              className="absolute right-1 top-1 h-2 w-2 rounded-full bg-emerald-500"
+              title="Real-time notifications active"
+            />
+          ) : null}
         </Link>
 
         {/* User Account / Profile */}

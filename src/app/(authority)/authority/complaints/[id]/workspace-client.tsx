@@ -25,8 +25,10 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { PriorityBadge } from "@/components/ui/priority-badge";
 import { ReferenceChip } from "@/components/ui/reference-chip";
 import { DemoBadge } from "@/components/ui/demo-badge";
+import { LiveIndicator } from "@/components/ui/live-indicator";
 import { PriorityReceipt } from "@/components/ai/priority-receipt";
 import { AIAnalysisCard } from "@/components/ai/ai-analysis-card";
+import { useRealtimeComplaint } from "@/hooks/use-realtime-complaint";
 import type { Complaint, ComplaintStatus, RejectReason, ComplaintActivity, Role } from "@/domain/types";
 import { getDepartmentName } from "@/domain/departments";
 
@@ -43,8 +45,27 @@ export function WorkspaceClient({
   currentUserRole = "authority",
   currentUserDepartmentId = null,
 }: WorkspaceClientProps) {
-  const [complaint, setComplaint] = React.useState<Complaint>(initialComplaint);
-  const [activities, setActivities] = React.useState<ComplaintActivity[]>(initialActivities);
+  const { complaint: liveComplaint, activities: liveActivities, isLive } = useRealtimeComplaint(initialComplaint);
+  const [localComplaint, setLocalComplaint] = React.useState<Complaint | null>(null);
+  const [localActivities, setLocalActivities] = React.useState<ComplaintActivity[] | null>(null);
+
+  const complaint = localComplaint ?? liveComplaint ?? initialComplaint;
+  const setComplaint = (next: Complaint | ((prev: Complaint) => Complaint)) => {
+    setLocalComplaint((current) => {
+      const base = current ?? liveComplaint ?? initialComplaint;
+      return typeof next === "function" ? next(base) : next;
+    });
+  };
+
+  const activities = localActivities ?? (liveActivities.length > 0 ? liveActivities : initialActivities);
+  const setActivities = (
+    next: ComplaintActivity[] | ((prev: ComplaintActivity[]) => ComplaintActivity[]),
+  ) => {
+    setLocalActivities((current) => {
+      const base = current ?? (liveActivities.length > 0 ? liveActivities : initialActivities);
+      return typeof next === "function" ? next(base) : next;
+    });
+  };
 
   // Department ownership check (PRD §21.2)
   const isOwningDepartment =
@@ -285,6 +306,7 @@ export function WorkspaceClient({
             score={complaint.priority.score}
             size="md"
           />
+          <LiveIndicator isLive={isLive} />
         </div>
       </div>
 

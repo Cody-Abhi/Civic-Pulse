@@ -6,6 +6,7 @@ import { cn } from "@/lib/cn";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 import { BottomNav } from "./bottom-nav";
+import { useRealtimeNotifications } from "@/hooks/use-realtime-notifications";
 import type { Role } from "@/domain/schemas";
 
 export interface AppShellProps {
@@ -33,6 +34,8 @@ export function AppShell({
   className,
 }: AppShellProps) {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const { unreadCount: liveUnread, isLive } = useRealtimeNotifications();
+  const effectiveUnread = isLive ? liveUnread : (unreadCount || liveUnread);
   const isCitizen = role === "citizen";
 
   const closeDrawer = useCallback(() => setMobileDrawerOpen(false), []);
@@ -45,7 +48,7 @@ export function AppShell({
     <div className="flex h-dvh w-full overflow-hidden bg-canvas">
       {/* Desktop/Tablet Sidebar (Hidden on mobile < 768px) */}
       <div className="hidden md:flex md:shrink-0">
-        <Sidebar role={role} unreadCount={unreadCount} />
+        <Sidebar role={role} unreadCount={effectiveUnread} />
       </div>
 
       {/* Authority/Admin Mobile Slide-Over Drawer (< 768px) */}
@@ -59,7 +62,7 @@ export function AppShell({
           />
           {/* Drawer content */}
           <div className="relative z-10 flex w-72 max-w-[85vw] flex-col bg-surface shadow-xl">
-            <Sidebar role={role} unreadCount={unreadCount} className="w-full border-r-0" />
+            <Sidebar role={role} unreadCount={effectiveUnread} className="w-full border-r-0" />
           </div>
         </div>
       )}
@@ -69,7 +72,8 @@ export function AppShell({
         <Topbar
           title={title}
           role={role}
-          unreadCount={unreadCount}
+          unreadCount={effectiveUnread}
+          isLive={isLive}
           onOpenMobileDrawer={toggleDrawer}
           isMobileDrawerOpen={mobileDrawerOpen}
         />
@@ -90,7 +94,7 @@ export function AppShell({
         </main>
 
         {/* Citizen Mobile Bottom Tab Bar */}
-        {isCitizen && <BottomNav unreadCount={unreadCount} />}
+        {isCitizen && <BottomNav unreadCount={effectiveUnread} />}
       </div>
     </div>
   );

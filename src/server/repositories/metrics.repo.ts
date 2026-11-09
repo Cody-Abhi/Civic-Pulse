@@ -1,5 +1,6 @@
 import "server-only";
 import { getAdminFirestore } from "@/server/clients/firebase-admin";
+import { withFirestoreTimeout } from "@/server/lib/timeout";
 import type { WardSummary } from "@/domain/types";
 import { PILOT_WARD_BOUNDARIES } from "@/domain/geo";
 
@@ -53,7 +54,11 @@ export function getDefaultWardStats(): WardSummary[] {
 export async function getCityMetrics(): Promise<CityMetricsTotals> {
   try {
     const firestore = getAdminFirestore();
-    const snap = await firestore.collection("cityMetrics").doc("totals").get();
+    const snap = await withFirestoreTimeout(
+      firestore.collection("cityMetrics").doc("totals").get(),
+      6000,
+      "getCityMetrics",
+    );
     if (snap.exists) {
       const data = snap.data() as Partial<CityMetricsTotals> | undefined;
       return {
@@ -126,7 +131,11 @@ export async function getWardStats(): Promise<WardSummary[]> {
 export async function getDepartmentMetrics(departmentId: string) {
   try {
     const firestore = getAdminFirestore();
-    const snap = await firestore.collection("departmentMetrics").doc(departmentId).get();
+    const snap = await withFirestoreTimeout(
+      firestore.collection("departmentMetrics").doc(departmentId).get(),
+      6000,
+      `getDepartmentMetrics(${departmentId})`,
+    );
     if (snap.exists) {
       return snap.data();
     }

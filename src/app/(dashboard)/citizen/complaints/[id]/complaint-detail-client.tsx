@@ -17,9 +17,11 @@ import { ReferenceChip } from "@/components/ui/reference-chip";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PriorityBadge } from "@/components/ui/priority-badge";
 import { DemoBadge } from "@/components/ui/demo-badge";
+import { LiveIndicator } from "@/components/ui/live-indicator";
 import { PriorityReceipt } from "@/components/ai/priority-receipt";
 import { AIAnalysisCard } from "@/components/ai/ai-analysis-card";
 import { Button } from "@/components/ui/button";
+import { useRealtimeComplaint } from "@/hooks/use-realtime-complaint";
 import type { Complaint, ComplaintStatus } from "@/domain/types";
 
 export interface ComplaintDetailClientProps {
@@ -36,7 +38,16 @@ const STATUS_STEPS: { key: ComplaintStatus; label: string }[] = [
 ];
 
 export function ComplaintDetailClient({ complaint: initialComplaint }: ComplaintDetailClientProps) {
-  const [complaint, setComplaint] = React.useState<Complaint>(initialComplaint);
+  const { complaint: liveComplaint, isLive } = useRealtimeComplaint(initialComplaint);
+  const [localComplaint, setLocalComplaint] = React.useState<Complaint | null>(null);
+  const complaint = localComplaint ?? liveComplaint ?? initialComplaint;
+  const setComplaint = (next: Complaint | ((prev: Complaint) => Complaint)) => {
+    setLocalComplaint((current) => {
+      const base = current ?? liveComplaint ?? initialComplaint;
+      return typeof next === "function" ? next(base) : next;
+    });
+  };
+
   const [showFeedbackModal, setShowFeedbackModal] = React.useState(false);
   const [showReopenModal, setShowReopenModal] = React.useState(false);
   const [rating, setRating] = React.useState<number>(5);
@@ -215,6 +226,7 @@ export function ComplaintDetailClient({ complaint: initialComplaint }: Complaint
           <ReferenceChip reference={complaint.ref} className="text-sm font-semibold" />
           <StatusBadge status={complaint.status} />
           <PriorityBadge band={complaint.priority.band} score={complaint.priority.score} />
+          <LiveIndicator isLive={isLive} />
         </div>
 
         <h1 className="text-2xl font-bold tracking-tight text-ink md:text-3xl">

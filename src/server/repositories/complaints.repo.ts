@@ -28,6 +28,7 @@ import {
   DEFAULT_WEIGHTS_VERSION,
 } from "@/domain/categories";
 import { validateTransition } from "@/domain/transitions";
+import { withFirestoreTimeout } from "@/server/lib/timeout";
 import { isInsideBengaluru, findWardByPoint, findWardById, geohashEncode } from "@/domain/geo";
 import { verifyAnalysisToken } from "@/server/auth/analysis-token";
 import type { SessionUser } from "@/server/auth/session";
@@ -75,16 +76,24 @@ export interface MapSnapshotPoint {
 
 export async function getComplaintById(refOrId: string): Promise<Complaint | null> {
   const firestore = getAdminFirestore();
-  const doc = await firestore.collection("complaints").doc(refOrId).get();
+  const doc = await withFirestoreTimeout(
+    firestore.collection("complaints").doc(refOrId).get(),
+    6000,
+    `getComplaintById(${refOrId})`,
+  );
   if (doc.exists) {
     return doc.data() as Complaint;
   }
 
-  const byRef = await firestore
-    .collection("complaints")
-    .where("ref", "==", refOrId)
-    .limit(1)
-    .get();
+  const byRef = await withFirestoreTimeout(
+    firestore
+      .collection("complaints")
+      .where("ref", "==", refOrId)
+      .limit(1)
+      .get(),
+    6000,
+    `getComplaintByRef(${refOrId})`,
+  );
 
   if (!byRef.empty && byRef.docs[0]) {
     return byRef.docs[0].data() as Complaint;
@@ -95,16 +104,24 @@ export async function getComplaintById(refOrId: string): Promise<Complaint | nul
 
 export async function getPublicComplaint(refOrId: string): Promise<PublicComplaint | null> {
   const firestore = getAdminFirestore();
-  const doc = await firestore.collection("publicComplaints").doc(refOrId).get();
+  const doc = await withFirestoreTimeout(
+    firestore.collection("publicComplaints").doc(refOrId).get(),
+    6000,
+    `getPublicComplaint(${refOrId})`,
+  );
   if (doc.exists) {
     return doc.data() as PublicComplaint;
   }
 
-  const byRef = await firestore
-    .collection("publicComplaints")
-    .where("ref", "==", refOrId)
-    .limit(1)
-    .get();
+  const byRef = await withFirestoreTimeout(
+    firestore
+      .collection("publicComplaints")
+      .where("ref", "==", refOrId)
+      .limit(1)
+      .get(),
+    6000,
+    `getPublicComplaintByRef(${refOrId})`,
+  );
 
   if (!byRef.empty && byRef.docs[0]) {
     return byRef.docs[0].data() as PublicComplaint;
@@ -115,11 +132,15 @@ export async function getPublicComplaint(refOrId: string): Promise<PublicComplai
 
 export async function getComplaintActivities(complaintId: string): Promise<ComplaintActivity[]> {
   const firestore = getAdminFirestore();
-  const snap = await firestore
-    .collection("complaintActivities")
-    .where("complaintId", "==", complaintId)
-    .orderBy("createdAt", "asc")
-    .get();
+  const snap = await withFirestoreTimeout(
+    firestore
+      .collection("complaintActivities")
+      .where("complaintId", "==", complaintId)
+      .orderBy("createdAt", "asc")
+      .get(),
+    6000,
+    `getComplaintActivities(${complaintId})`,
+  );
 
   return snap.docs.map((d) => d.data() as ComplaintActivity);
 }
@@ -206,7 +227,11 @@ export async function listComplaints(
   const effectiveLimit = options.limit !== undefined ? options.limit : 20;
   query = query.limit(effectiveLimit);
 
-  const snap = await query.get();
+  const snap = await withFirestoreTimeout(
+    query.get(),
+    6000,
+    "listComplaints",
+  );
   let results = snap.docs.map((d) => d.data() as Complaint);
 
   // In-memory filters for fields not backed by index or substring text search
@@ -263,11 +288,15 @@ export async function getComplaintCounts(filters: {
     baseQuery = baseQuery.where("category", "==", filters.category);
   }
 
-  const [totalSnap, openSnap, resolvedSnap] = await Promise.all([
-    baseQuery.count().get(),
-    baseQuery.where("status", "in", [...OPEN_STATUSES]).count().get(),
-    baseQuery.where("status", "in", ["RESOLVED", "CLOSED"]).count().get(),
-  ]);
+  const [totalSnap, openSnap, resolvedSnap] = await withFirestoreTimeout(
+    Promise.all([
+      baseQuery.count().get(),
+      baseQuery.where("status", "in", [...OPEN_STATUSES]).count().get(),
+      baseQuery.where("status", "in", ["RESOLVED", "CLOSED"]).count().get(),
+    ]),
+    6000,
+    "getComplaintCounts",
+  );
 
   return {
     total: totalSnap.data().count,
@@ -490,6 +519,7 @@ export async function createComplaint(
       createdAt: nowIso,
       visibleToReporter: true,
       departmentId,
+      reporterUid: user.uid,
     };
     tx.set(firestore.collection("complaintActivities").doc(initialActivity.id), initialActivity);
 
@@ -729,6 +759,7 @@ export async function transitionComplaint(
       createdAt: nowIso,
       visibleToReporter: true,
       departmentId: complaint.departmentId,
+      reporterUid: complaint.reporterUid,
     };
     tx.set(firestore.collection("complaintActivities").doc(activityId), activity);
 
@@ -937,6 +968,7 @@ export async function supportComplaint(
       createdAt: nowIso,
       visibleToReporter: true,
       departmentId: complaint.departmentId,
+      reporterUid: complaint.reporterUid,
     });
 
     // Update user stats
@@ -1060,6 +1092,7 @@ export async function adjustComplaintPriority(
     createdAt: nowIso,
     visibleToReporter: false,
     departmentId: complaint.departmentId,
+    reporterUid: complaint.reporterUid,
   });
 
   return complaint;
@@ -1126,6 +1159,7 @@ export async function setVerifiedSeverity(
     createdAt: nowIso,
     visibleToReporter: true,
     departmentId: complaint.departmentId,
+    reporterUid: complaint.reporterUid,
   });
 
   return complaint;

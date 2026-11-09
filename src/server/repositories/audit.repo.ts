@@ -1,5 +1,6 @@
 import "server-only";
 import { getAdminFirestore } from "@/server/clients/firebase-admin";
+import { withFirestoreTimeout } from "@/server/lib/timeout";
 import type { AuditLog, Role } from "@/domain/types";
 
 export interface CreateAuditLogInput {
@@ -61,6 +62,10 @@ export async function listAuditLogs(options?: {
 
   query = query.orderBy("createdAt", "desc").limit(options?.limit || 50);
 
-  const snapshot = await query.get();
+  const snapshot = await withFirestoreTimeout(
+    query.get(),
+    6000,
+    "listAuditLogs",
+  );
   return snapshot.docs.map((doc) => doc.data() as AuditLog);
 }

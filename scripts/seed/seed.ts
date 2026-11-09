@@ -624,6 +624,7 @@ export async function runSeed(): Promise<number> {
     const activity: ComplaintActivity = {
       id: `act-${c.id}`,
       complaintId: c.id,
+      reporterUid: c.reporterUid,
       actorUid: c.reporterUid,
       actorName: c.reporterDisplayName,
       actorRole: "citizen",

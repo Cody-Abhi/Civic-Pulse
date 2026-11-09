@@ -40,9 +40,9 @@ service cloud.firestore {
 
     match /complaintActivities/{id} {
       allow read: if isAdmin()
-        || (isAuthority() && resource.data.departmentId == dept())
-        || (signedIn() && resource.data.reporterUid == request.auth.uid
-            && resource.data.visibleToReporter == true);
+        || (isAuthority() && resource.data.get('departmentId', '') == dept())
+        || (signedIn() && resource.data.get('reporterUid', '') == request.auth.uid
+            && resource.data.get('visibleToReporter', false) == true);
       allow write: if false;
     }
 

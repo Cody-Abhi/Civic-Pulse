@@ -243,6 +243,7 @@ export interface ComplaintActivity {
   createdAt: string;
   visibleToReporter: boolean;
   departmentId: string;
+  reporterUid?: string | undefined;
 }
 
 export interface AdminUser {

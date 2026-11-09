@@ -7,6 +7,8 @@ import { PageHeader } from "@/components/layout/page-header";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/feedback/empty-state";
+import { LiveIndicator } from "@/components/ui/live-indicator";
+import { useRealtimeNotifications } from "@/hooks/use-realtime-notifications";
 import type { Notification } from "@/domain/types";
 
 function formatRelativeTime(createdAtIso: string): string {
@@ -38,43 +40,42 @@ export function NotificationCenter({
   emptyTitle,
   emptyBody,
 }: NotificationCenterProps) {
-  const [items, setItems] = React.useState<Notification[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const { notifications: realtimeItems, isLive, loading: realtimeLoading } = useRealtimeNotifications();
+  const [localItems, setLocalItems] = React.useState<Notification[]>([]);
+  const [fallbackLoading, setFallbackLoading] = React.useState(true);
   const [filter, setFilter] = React.useState<"ALL" | "UNREAD">("ALL");
 
+  // Initial HTTP fetch fallback
   React.useEffect(() => {
     let isMounted = true;
-    const load = () => {
-      fetch("/api/notifications")
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => {
-          if (isMounted && d?.notifications) {
-            setItems(d.notifications);
-            setLoading(false);
-          }
-        })
-        .catch(() => {
-          if (isMounted) setLoading(false);
-        });
-    };
+    fetch("/api/notifications")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (isMounted && d?.notifications) {
+          setLocalItems(d.notifications);
+          setFallbackLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setFallbackLoading(false);
+      });
 
-    load();
-    const interval = setInterval(load, 15000);
     return () => {
       isMounted = false;
-      clearInterval(interval);
     };
   }, []);
 
+  const items = isLive || realtimeItems.length > 0 ? realtimeItems : localItems;
+  const loading = isLive ? false : realtimeLoading && fallbackLoading;
   const unreadCount = items.filter((i) => !i.read).length;
 
   const markAllAsRead = async () => {
-    setItems((prev) => prev.map((item) => ({ ...item, read: true })));
+    setLocalItems((prev) => prev.map((item) => ({ ...item, read: true })));
     await fetch("/api/notifications/read-all", { method: "POST" }).catch(() => {});
   };
 
   const markSingleAsRead = async (id: string) => {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));
+    setLocalItems((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));
     await fetch(`/api/notifications/${id}/read`, { method: "POST" }).catch(() => {});
   };
 
@@ -88,7 +89,12 @@ export function NotificationCenter({
       <PageHeader
         title={title}
         description={description}
-        meta={<DemoBadge />}
+        meta={
+          <div className="flex items-center gap-2">
+            <DemoBadge />
+            <LiveIndicator isLive={isLive} />
+          </div>
+        }
         actions={
           <div className="flex items-center gap-2">
             <Button
