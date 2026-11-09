@@ -26,6 +26,19 @@ interface AiMetrics {
     status: string;
     reason?: string;
   }>;
+  adaptionEval?: {
+    datasetSize: number;
+    languages: string[];
+    gradeBefore: string;
+    gradeAfter: string;
+    accuracyByLanguage: {
+      en: number;
+      hi: number;
+      kn: number;
+    };
+    overallAccuracy: number;
+    evaluatedAt: string;
+  };
 }
 
 interface AiMonitoringClientProps {
@@ -312,6 +325,112 @@ export function AiMonitoringClient({ initialMetrics, modelConfig }: AiMonitoring
           </div>
         </div>
       </div>
+
+      {/* Multilingual evaluation (Adaption) Panel (PRD Block F §3) */}
+      {metrics.adaptionEval && (
+        <section
+          aria-label="Multilingual evaluation (Adaption)"
+          className="rounded-xl border border-primary/20 bg-surface-card p-5 shadow-xs space-y-4"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-border pb-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-semibold text-foreground">
+                  Multilingual evaluation (Adaption)
+                </h2>
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-800">
+                  Offline Evaluation
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Benchmark synthesized via Adaption Labs SDK for evaluating Hindi and Kannada civic triage. Adaption is evaluated offline and is not invoked at runtime.
+              </p>
+            </div>
+            <span className="text-[11px] font-mono text-muted-foreground shrink-0">
+              Evaluated {new Date(metrics.adaptionEval.evaluatedAt).toLocaleDateString("en-IN")}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-lg border border-border bg-surface p-3">
+              <span className="text-[11px] font-medium text-muted-foreground">Benchmark Size</span>
+              <p className="text-lg font-bold text-foreground mt-0.5">
+                {metrics.adaptionEval.datasetSize} <span className="text-xs font-normal text-muted-foreground">records</span>
+              </p>
+              <span className="text-[10px] text-muted-foreground">English, Hindi &amp; Kannada</span>
+            </div>
+
+            <div className="rounded-lg border border-border bg-surface p-3">
+              <span className="text-[11px] font-medium text-muted-foreground">Adaption Quality Grade</span>
+              <p className="text-lg font-bold text-emerald-600 mt-0.5">
+                {metrics.adaptionEval.gradeBefore} <span className="text-xs text-muted-foreground font-normal">→</span> {metrics.adaptionEval.gradeAfter}
+              </p>
+              <span className="text-[10px] text-muted-foreground">Before &amp; after paraphrase augmentation</span>
+            </div>
+
+            <div className="rounded-lg border border-border bg-surface p-3">
+              <span className="text-[11px] font-medium text-muted-foreground">Overall Triage Accuracy</span>
+              <p className="text-lg font-bold text-foreground mt-0.5">
+                {metrics.adaptionEval.overallAccuracy}%
+              </p>
+              <span className="text-[10px] text-muted-foreground">Keyword fallback + Gemini pipeline</span>
+            </div>
+          </div>
+
+          {/* Per-Language Accuracy Breakdown */}
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
+              Classifier Accuracy per Language
+            </span>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-foreground">English (en)</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {metrics.adaptionEval.accuracyByLanguage.en}%
+                  </span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-emerald-500"
+                    style={{ width: `${metrics.adaptionEval.accuracyByLanguage.en}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-foreground">Hindi · हिन्दी (hi)</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {metrics.adaptionEval.accuracyByLanguage.hi}%
+                  </span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-emerald-500"
+                    style={{ width: `${metrics.adaptionEval.accuracyByLanguage.hi}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-foreground">Kannada · ಕನ್ನಡ (kn)</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {metrics.adaptionEval.accuracyByLanguage.kn}%
+                  </span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-emerald-500"
+                    style={{ width: `${metrics.adaptionEval.accuracyByLanguage.kn}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

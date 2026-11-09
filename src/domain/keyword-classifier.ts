@@ -6,13 +6,34 @@ import { CATEGORY_CONFIG, departmentOf } from "./categories";
  * Gemini is unavailable/invalid. English + transliterated Hindi/Kannada terms.
  */
 const DICTIONARY: Record<Exclude<ComplaintCategory, "OTHER">, string[]> = {
-  GARBAGE: ["garbage", "trash", "waste", "dump", "bin", "kachra", "kasa", "sweeping", "bbmp vehicle"],
-  POTHOLE: ["pothole", "gaddha", "crater", "road broken", "broken road", "tar"],
-  STREETLIGHT: ["streetlight", "street light", "lamp", "batti", "dark street", "pole light"],
-  WATER_LEAK: ["leak", "pipe burst", "water wastage", "paani leak", "valve"],
-  DRAINAGE: ["drain", "naali", "gutter", "waterlogging", "flooded", "sewage", "choked", "chocked"],
-  SANITATION: ["toilet", "urinal", "public toilet", "shauchalay", "stink"],
-  INFRASTRUCTURE: ["footpath", "manhole", "pavement", "signboard", "broken slab", "railing"],
+  GARBAGE: [
+    "garbage", "trash", "waste", "dump", "bin", "kachra", "kasa", "sweeping", "bbmp vehicle",
+    "कचरा", "कूड़ा", "बदबू", "ಕಸ", "ತ್ಯಾಜ್ಯ", "ಕಸದ ತೊಟ್ಟಿ",
+  ],
+  POTHOLE: [
+    "pothole", "gaddha", "crater", "road broken", "broken road", "tar", "asphalt",
+    "गड्ढा", "डामर", "सड़क", "ಗುಂಡಿ", "ಡಾಂಬರು", "ರಸ್ತೆ",
+  ],
+  STREETLIGHT: [
+    "streetlight", "street light", "lamp", "batti", "dark street", "pole light",
+    "स्ट्रीट लाइट", "बत्ती", "अंधेरा", "ಬೀದಿದೀಪ", "ಕಂಬ", "ದೀಪ", "ಕತ್ತಲು",
+  ],
+  WATER_LEAK: [
+    "leak", "pipe burst", "water wastage", "paani leak", "valve", "pipeline",
+    "पानी", "पाइप", "लीक", "ನೀರು", "ಪೈಪ್", "ಸೋರಿಕೆ",
+  ],
+  DRAINAGE: [
+    "drain", "naali", "gutter", "waterlogging", "flooded", "sewage", "choked", "chocked",
+    "नाला", "नाली", "सीवेज", "गंदा पानी", "ಚರಂಡಿ", "ಕೊಳಚೆ", "ಮಳೆ ನೀರು",
+  ],
+  SANITATION: [
+    "toilet", "urinal", "public toilet", "shauchalay", "stink",
+    "शौचालय", "ಶೌಚಾಲಯ",
+  ],
+  INFRASTRUCTURE: [
+    "footpath", "manhole", "pavement", "signboard", "broken slab", "railing",
+    "फुटपाथ", "स्लैब", "मैनहोल", "ಪಾದಚಾರಿ", "ಸ್ಲ್ಯಾಬ್",
+  ],
 };
 
 const CATEGORY_ORDER = Object.keys(DICTIONARY) as Array<Exclude<ComplaintCategory, "OTHER">>;

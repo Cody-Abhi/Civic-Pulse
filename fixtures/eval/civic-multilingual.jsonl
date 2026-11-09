@@ -1,0 +1,36 @@
+{"id": "eval-0001", "language": "en", "category": "POTHOLE", "text": "Severe deep pothole in the middle of the road causing two-wheeler skidding risk.", "qualityGrade": "A", "source": "canonical"}
+{"id": "eval-0002", "language": "hi", "category": "POTHOLE", "text": "सड़क के बीच में गहरा गड्ढा होने से दोपहिया वाहनों के फिसलने का भारी खतरा बना हुआ है।", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0003", "language": "kn", "category": "POTHOLE", "text": "ರಸ್ತೆಯ ಮಧ್ಯದಲ್ಲಿ ಆಳವಾದ ಗುಂಡಿ ಬಿದ್ದಿದ್ದು ದ್ವಿಚಕ್ರ ವಾಹನ ಸವಾರರು ಜಾರಿ ಬೀಳುವ ಅಪಾಯವಿದೆ.", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0004", "language": "en", "category": "POTHOLE", "text": "Asphalt top layer completely eroded with exposed sharp stone aggregates.", "qualityGrade": "A", "source": "canonical"}
+{"id": "eval-0005", "language": "hi", "category": "POTHOLE", "text": "डामर की ऊपरी परत पूरी तरह उखड़ चुकी है और नुकीले पत्थर बाहर आ गए हैं।", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0006", "language": "kn", "category": "POTHOLE", "text": "ಡಾಂಬರು ಕಿತ್ತುಹೋಗಿದ್ದು ಚೂಪಾದ ಕಲ್ಲುಗಳು ರಸ್ತೆಯ ಮೇಲೆ ಹರಡಿಕೊಂಡಿವೆ.", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0007", "language": "en", "category": "DRAINAGE", "text": "Stormwater drain blocked with plastic debris causing sewage water to back up onto footpath.", "qualityGrade": "A", "source": "canonical"}
+{"id": "eval-0008", "language": "hi", "category": "DRAINAGE", "text": "प्लास्टिक कचरे से नाला जाम हो गया है जिससे गंदा पानी फुटपाथ पर भर रहा है।", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0009", "language": "kn", "category": "DRAINAGE", "text": "ಪ್ಲಾಸ್ಟಿಕ್ ತ್ಯಾಜ್ಯದಿಂದ ಚರಂಡಿ ಕಟ್ಟಿಕೊಂಡಿದ್ದು ಕೊಳಚೆ ನೀರು ಪಾದಚಾರಿ ಮಾರ್ಗದ ಮೇಲೆ ಹರಿಯುತ್ತಿದೆ.", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0010", "language": "en", "category": "DRAINAGE", "text": "Missing concrete manhole drain cover slab posing grave pedestrian hazard.", "qualityGrade": "A", "source": "canonical"}
+{"id": "eval-0011", "language": "hi", "category": "DRAINAGE", "text": "मैनहोल का कंक्रीट स्लैब गायब है जिससे पैदल चलने वालों के लिए गंभीर खतरा है।", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0012", "language": "kn", "category": "DRAINAGE", "text": "ಚರಂಡಿಯ ಕಾಂಕ್ರೀಟ್ ಸ್ಲ್ಯಾಬ್ ಮುರಿದುಹೋಗಿದ್ದು ಪಾದಚಾರಿಗಳು ಬೀಳುವ ಆತಂಕವಿದೆ.", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0013", "language": "en", "category": "STREETLIGHT", "text": "Three consecutive streetlights flickering and not functioning after sunset.", "qualityGrade": "A", "source": "canonical"}
+{"id": "eval-0014", "language": "hi", "category": "STREETLIGHT", "text": "लगातार तीन स्ट्रीट लाइटें खराब हैं और सूर्यास्त के बाद बिल्कुल नहीं जलती हैं।", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0015", "language": "kn", "category": "STREETLIGHT", "text": "ಸತತ ಮೂರು ಬೀದಿದೀಪಗಳು ಕೆಟ್ಟಿದ್ದು ರಾತ್ರಿ ವೇಳೆ ಕತ್ತಲು ಆವರಿಸಿದೆ.", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0016", "language": "en", "category": "STREETLIGHT", "text": "Exposed electrical cable hanging from streetlight junction box at arm height.", "qualityGrade": "A", "source": "canonical"}
+{"id": "eval-0017", "language": "hi", "category": "STREETLIGHT", "text": "स्ट्रीट लाइट जंक्शन बॉक्स से नंगा बिजली का तार खतरनाक तरीके से लटक रहा है।", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0018", "language": "kn", "category": "STREETLIGHT", "text": "ಬೀದಿದೀಪದ ಕಂಬದಿಂದ ತೆರೆದ ವಿದ್ಯುತ್ ತಂತಿ ಕೆಳಗೆ ತೂಗಾಡುತ್ತಿದ್ದು ಅಪಾಯಕಾರಿಯಾಗಿದೆ.", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0019", "language": "en", "category": "GARBAGE", "text": "Heavy municipal solid waste dumping creating unbearable stench and stray dog menace.", "qualityGrade": "A", "source": "canonical"}
+{"id": "eval-0020", "language": "hi", "category": "GARBAGE", "text": "कचरे का भारी ढेर लगा हुआ है जिससे असहनीय बदबू और आवारा कुत्तों का आतंक फैल गया है।", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0021", "language": "kn", "category": "GARBAGE", "text": "ಕಸದ ರಾಶಿ ಬಿದ್ದಿದ್ದು ಅಸಹ್ಯಕರ ವಾಸನೆ ಬರುತ್ತಿದೆ ಹಾಗೂ ಬೀದಿನಾಯಿಗಳ ಕಾಟ ಹೆಚ್ಚಾಗಿದೆ.", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0022", "language": "en", "category": "GARBAGE", "text": "Community garbage bin overflowing and waste scattered across the street corner.", "qualityGrade": "A", "source": "canonical"}
+{"id": "eval-0023", "language": "hi", "category": "GARBAGE", "text": "कचरे का डिब्बा भर कर बह रहा है और सारा कूड़ा सड़क के कोने पर फैल गया है।", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0024", "language": "kn", "category": "GARBAGE", "text": "ಕಸದ ತೊಟ್ಟಿ ತುಂಬಿ ತುಳುಕುತ್ತಿದ್ದು ರಸ್ತೆಯ ಮೂಲೆಗೆಲ್ಲ ತ್ಯಾಜ್ಯ ಹರಡಿದೆ.", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0025", "language": "en", "category": "WATER_LEAK", "text": "Clean potable drinking water pipeline ruptured and gushing onto public road.", "qualityGrade": "A", "source": "canonical"}
+{"id": "eval-0026", "language": "hi", "category": "WATER_LEAK", "text": "पीने के पानी की मुख्य पाइपलाइन फट गई है और साफ पानी सड़क पर बह रहा है।", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0027", "language": "kn", "category": "WATER_LEAK", "text": "ಕುಡಿಯುವ ನೀರಿನ ಪೈಪ್ ಒಡೆದು ರಸ್ತೆಯ ಮೇಲೆ ಶುದ್ಧ ನೀರು ವ್ಯರ್ಥವಾಗಿ ಹರಿಯುತ್ತಿದೆ.", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0028", "language": "en", "category": "WATER_LEAK", "text": "Underground BWSSB valve leaking continuously creating mud puddle on pavement.", "qualityGrade": "A", "source": "canonical"}
+{"id": "eval-0029", "language": "hi", "category": "WATER_LEAK", "text": "जमीन के नीचे वाल्व लीक होने से फुटपाथ पर लगातार कीचड़ जमा हो रहा है।", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0030", "language": "kn", "category": "WATER_LEAK", "text": "ಒಳಚರಂಡಿ ಅಥವಾ ನೀರಿನ ವಾಲ್ವ್ ಸೋರಿಕೆಯಾಗುತ್ತಿದ್ದು ರಸ್ತೆಯಲ್ಲಿ ಕೆಸರು ತುಂಬಿದೆ.", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0031", "language": "en", "category": "TRAFFIC", "text": "Traffic signal junction malfunctioning, staying permanently on red creating gridlock.", "qualityGrade": "A", "source": "canonical"}
+{"id": "eval-0032", "language": "hi", "category": "TRAFFIC", "text": "ट्रैफिक सिग्नल खराब है और हमेशा लाल बत्ती पर अटका रहता है जिससे जाम लगा है।", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0033", "language": "kn", "category": "TRAFFIC", "text": "ಟ್ರಾಫಿಕ್ ಸಿಗ್ನಲ್ ಕೆಟ್ಟಿದ್ದು ನಿರಂತರವಾಗಿ ಕೆಂಪು ದೀಪ ತೋರಿಸುತ್ತಾ ಟ್ರಾಫಿಕ್ ಜಾಮ್ ಉಂಟಾಗಿದೆ.", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0034", "language": "en", "category": "INFRASTRUCTURE", "text": "Broken footpath pavers creating tripping hazard for senior citizens.", "qualityGrade": "A", "source": "canonical"}
+{"id": "eval-0035", "language": "hi", "category": "INFRASTRUCTURE", "text": "फुटपाथ के पेविंग ब्लॉक टूटे हुए हैं जिससे वरिष्ठ नागरिकों के गिरने का खतरा है।", "qualityGrade": "A-", "source": "adaption-translated"}
+{"id": "eval-0036", "language": "kn", "category": "INFRASTRUCTURE", "text": "ಪಾದಚಾರಿ ಮಾರ್ಗದ ಕಲ್ಲುಗಳು ಕಿತ್ತುಹೋಗಿದ್ದು ಹಿರಿಯ ನಾಗರಿಕರಿಗೆ ನಡೆಯಲು ಕಷ್ಟವಾಗಿದೆ.", "qualityGrade": "A-", "source": "adaption-translated"}
