@@ -427,6 +427,12 @@ export async function createComplaint(
       { merge: true },
     );
 
+    const isDemoSession = Boolean(
+      user.email?.includes("civicpulse.local") ||
+      user.email?.includes("demo") ||
+      user.viewOnly,
+    );
+
     // D. Construct Complaint Document
     const complaint: Complaint = {
       id,
@@ -481,6 +487,7 @@ export async function createComplaint(
       resolution: null,
       feedback: null,
       isSynthetic: false,
+      isDemoSession: isDemoSession || undefined,
       createdAt: nowIso,
       updatedAt: nowIso,
     };
@@ -503,6 +510,7 @@ export async function createComplaint(
         priority: priorityResult,
         supporterCount: 0,
         independentReporterCount: 1,
+        isDemoSession: isDemoSession || undefined,
         createdAt: nowIso,
       };
       tx.set(firestore.collection("publicComplaints").doc(id), publicDoc);
@@ -520,6 +528,7 @@ export async function createComplaint(
       visibleToReporter: true,
       departmentId,
       reporterUid: user.uid,
+      isDemoSession: isDemoSession || undefined,
     };
     tx.set(firestore.collection("complaintActivities").doc(initialActivity.id), initialActivity);
 
@@ -760,6 +769,7 @@ export async function transitionComplaint(
       visibleToReporter: true,
       departmentId: complaint.departmentId,
       reporterUid: complaint.reporterUid,
+      isDemoSession: complaint.isDemoSession || undefined,
     };
     tx.set(firestore.collection("complaintActivities").doc(activityId), activity);
 
@@ -969,6 +979,7 @@ export async function supportComplaint(
       visibleToReporter: true,
       departmentId: complaint.departmentId,
       reporterUid: complaint.reporterUid,
+      isDemoSession: complaint.isDemoSession || undefined,
     });
 
     // Update user stats
@@ -1093,6 +1104,7 @@ export async function adjustComplaintPriority(
     visibleToReporter: false,
     departmentId: complaint.departmentId,
     reporterUid: complaint.reporterUid,
+    isDemoSession: complaint.isDemoSession || undefined,
   });
 
   return complaint;
@@ -1160,6 +1172,7 @@ export async function setVerifiedSeverity(
     visibleToReporter: true,
     departmentId: complaint.departmentId,
     reporterUid: complaint.reporterUid,
+    isDemoSession: complaint.isDemoSession || undefined,
   });
 
   return complaint;

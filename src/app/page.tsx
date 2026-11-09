@@ -18,6 +18,7 @@ import { PublicFooter } from "@/components/layout/public-footer";
 import { PriorityReceipt } from "@/components/ai/priority-receipt";
 import { MetricStrip } from "@/components/data/metric-strip";
 import { DemoBadge } from "@/components/ui/demo-badge";
+import { JudgePanel } from "@/components/demo/judge-panel";
 import {
   getCityMetrics,
   DEFAULT_CITY_METRICS,
@@ -159,6 +160,13 @@ export default async function HomePage() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* ── Judge Demo Section (PRD Block D §1) ── */}
+        <section className="border-b border-border bg-gradient-to-b from-canvas to-surface-muted py-8">
+          <div className="mx-auto max-w-[1360px] px-4 md:px-8">
+            <JudgePanel />
           </div>
         </section>
 

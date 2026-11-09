@@ -48,6 +48,7 @@ export interface User {
   status: "active" | "suspended";
   homeWardId: string | null;
   emailVerified: boolean;
+  viewOnly?: boolean | undefined;
   prefs: {
     defaultVisibility: "public" | "private";
     notify: Record<"support" | "newInQueue" | "slaBreach", boolean>;
@@ -202,6 +203,7 @@ export interface Complaint {
   resolution: Resolution | null;
   feedback: Feedback | null;
   isSynthetic: boolean;
+  isDemoSession?: boolean | undefined;
   createdAt: string;
   updatedAt: string;
 }
@@ -229,6 +231,7 @@ export interface PublicComplaint {
   priority: PriorityResult;
   supporterCount: number;
   independentReporterCount: number;
+  isDemoSession?: boolean | undefined;
   createdAt: string;
 }
 
@@ -244,6 +247,7 @@ export interface ComplaintActivity {
   visibleToReporter: boolean;
   departmentId: string;
   reporterUid?: string | undefined;
+  isDemoSession?: boolean | undefined;
 }
 
 export interface AdminUser {
@@ -256,6 +260,7 @@ export interface AdminUser {
   emailVerified: boolean;
   homeWardId: string | null;
   complaintsFiled: number;
+  viewOnly?: boolean | undefined;
   createdAt: string;
   lastSignInAt?: string | undefined;
 }

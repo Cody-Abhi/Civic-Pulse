@@ -14,6 +14,7 @@ interface DemoAccount {
   password?: string;
   label: string;
   description: string;
+  viewOnly?: boolean;
 }
 
 interface DemoAccountPanelProps {
@@ -71,6 +72,15 @@ export function DemoAccountPanel({ className }: DemoAccountPanelProps) {
       if (!password) {
         throw new Error("Demo credentials currently unavailable. Check DEMO_PASSWORD environment variable.");
       }
+
+      // Initialize guided tour for judge (PRD Block D §1)
+      try {
+        localStorage.setItem(
+          `civicpulse_tour_${account.role}`,
+          JSON.stringify({ completed: [], dismissed: false }),
+        );
+      } catch {}
+
       const session = await loginWithEmail(account.email, password, nextParam);
       router.replace(session.home);
     } catch (err) {
@@ -91,7 +101,8 @@ export function DemoAccountPanel({ className }: DemoAccountPanelProps) {
   };
 
   return (
-    <div
+    <section
+      aria-label="Try it as a judge"
       className={cn(
         "rounded-xl border border-white/15 bg-white/5 p-4 backdrop-blur-sm",
         className,
@@ -101,16 +112,16 @@ export function DemoAccountPanel({ className }: DemoAccountPanelProps) {
         <div className="flex items-center gap-1.5">
           <Icon icon={Sparkles} size={15} className="text-primary" />
           <span className="text-xs font-semibold tracking-wide uppercase text-white/90">
-            Quick Sign In · Demo Accounts
+            Try it as a judge · Demo Accounts
           </span>
         </div>
         <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary">
-          Seeded Data
+          Judge Mode
         </span>
       </div>
 
       <p className="text-xs text-white/70 mb-3 leading-relaxed">
-        Test instant role-based access with verified credentials. No manual sign-up required.
+        Test instant role-based access with verified credentials and interactive guided tours.
       </p>
 
       {error && (
@@ -155,9 +166,16 @@ export function DemoAccountPanel({ className }: DemoAccountPanelProps) {
                     )}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-white">
-                      {acc.label}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold text-white">
+                        {acc.label}
+                      </span>
+                      {acc.viewOnly && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-purple-500/30 text-purple-200 border border-purple-400/40">
+                          View-Only
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[11px] text-white/60 line-clamp-1">
                       {acc.description}
                     </span>
@@ -172,6 +190,6 @@ export function DemoAccountPanel({ className }: DemoAccountPanelProps) {
           })}
         </div>
       )}
-    </div>
+    </section>
   );
 }

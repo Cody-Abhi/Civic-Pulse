@@ -158,6 +158,16 @@ const SEED_USERS = [
     role: "admin" as const,
     departmentId: null,
     homeWardId: null,
+    viewOnly: false,
+  },
+  {
+    uid: "demo-admin-viewonly-uid",
+    email: "admin.demo@civicpulse.invalid",
+    displayName: "Admin Demo (View-Only)",
+    role: "admin" as const,
+    departmentId: null,
+    homeWardId: null,
+    viewOnly: true,
   },
   {
     uid: "demo-authority-uid",
@@ -462,7 +472,7 @@ export async function runSeed(): Promise<number> {
   // 1. Seed Users in Firebase Auth & Firestore
   console.log("Creating/updating Firebase Auth users & Firestore profiles...");
   for (const u of SEED_USERS) {
-    const userPassword = u.role === "admin" ? DEMO_ADMIN_PASSWORD : DEMO_PASSWORD;
+    const userPassword = (u.role === "admin" && !u.viewOnly) ? DEMO_ADMIN_PASSWORD : DEMO_PASSWORD;
     try {
       try {
         await auth.getUser(u.uid);
@@ -486,6 +496,7 @@ export async function runSeed(): Promise<number> {
         role: u.role,
         departmentId: u.departmentId,
         status: (u as { status?: string }).status || "active",
+        viewOnly: Boolean(u.viewOnly),
         synthetic: true,
         v: Date.now(),
       });
@@ -499,6 +510,7 @@ export async function runSeed(): Promise<number> {
         status: (u as { status?: "active" | "suspended" }).status || "active",
         homeWardId: u.homeWardId,
         emailVerified: true,
+        viewOnly: Boolean(u.viewOnly),
         prefs: {
           defaultVisibility: "public",
           notify: { support: true, newInQueue: true, slaBreach: true },

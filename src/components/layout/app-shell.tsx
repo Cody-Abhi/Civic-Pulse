@@ -7,6 +7,7 @@ import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 import { BottomNav } from "./bottom-nav";
 import { useRealtimeNotifications } from "@/hooks/use-realtime-notifications";
+import { GuidedTourChecklist } from "@/components/demo/guided-tour-checklist";
 import type { Role } from "@/domain/schemas";
 
 export interface AppShellProps {
@@ -95,6 +96,9 @@ export function AppShell({
 
         {/* Citizen Mobile Bottom Tab Bar */}
         {isCitizen && <BottomNav unreadCount={effectiveUnread} />}
+
+        {/* Judge Mode Guided Tour Checklist (PRD Block D §1) */}
+        <GuidedTourChecklist role={role} />
       </div>
     </div>
   );

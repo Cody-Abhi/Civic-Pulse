@@ -144,6 +144,18 @@ export function withApi<TBody = unknown, TParams = Record<string, string>>(
           );
         }
 
+        // View-only demo account guard for mutating endpoints (Block D: Judge Mode)
+        const isMutation = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+        if (user.viewOnly && isMutation) {
+          return formatErrorResponse(
+            403,
+            "FORBIDDEN",
+            "View-only demo account",
+            undefined,
+            requestId,
+          );
+        }
+
         if (options.authorize) {
           const authorized = await options.authorize(user, req, { params: rawContext?.params as Promise<Record<string, string>> });
           if (!authorized) {

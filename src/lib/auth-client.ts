@@ -25,6 +25,7 @@ export interface SessionResponse {
     role: Role;
     departmentId: string | null;
     homeWardId?: string | null;
+    viewOnly?: boolean | undefined;
   };
 }
 

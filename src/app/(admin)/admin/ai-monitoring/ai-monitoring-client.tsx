@@ -5,6 +5,7 @@ import { AlertTriangle, Power } from "lucide-react";
 import { MetricStrip, type MetricStripItem } from "@/components/data/metric-strip";
 import { ChartFrame } from "@/components/data/chart-frame";
 import { Button } from "@/components/ui/button";
+import { ViewOnlyGuard } from "@/components/ui/view-only-guard";
 
 interface AiMetrics {
   paused: boolean;
@@ -121,18 +122,20 @@ export function AiMonitoringClient({ initialMetrics }: AiMonitoringClientProps) 
           </div>
         </div>
 
-        <Button
-          variant={metrics.paused ? "primary" : "outline"}
-          disabled={isToggling}
-          onClick={handleTogglePause}
-          className="shrink-0"
-        >
-          {isToggling
-            ? "Switching..."
-            : metrics.paused
-              ? "Resume Gemini AI"
-              : "Pause Gemini AI"}
-        </Button>
+        <ViewOnlyGuard tooltip="View-only demo account: AI pipeline controls disabled.">
+          <Button
+            variant={metrics.paused ? "primary" : "outline"}
+            disabled={isToggling}
+            onClick={handleTogglePause}
+            className="shrink-0"
+          >
+            {isToggling
+              ? "Switching..."
+              : metrics.paused
+                ? "Resume Gemini AI"
+                : "Pause Gemini AI"}
+          </Button>
+        </ViewOnlyGuard>
       </div>
 
       {statusMessage && (

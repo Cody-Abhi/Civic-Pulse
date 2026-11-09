@@ -2,6 +2,7 @@ import "server-only";
 import crypto from "crypto";
 import { getGeminiClient, getGeminiModelConfig } from "@/server/clients/gemini";
 import { getAdminFirestore } from "@/server/clients/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { getSystemSettings, recordAiInferenceCall } from "@/server/services/admin";
 import { getComplaints, updateComplaintPriority } from "@/server/services/complaints";
 import { redactPII } from "@/domain/redact";
@@ -48,7 +49,8 @@ export type FallbackReason =
   | "QUOTA"
   | "SAFETY"
   | "NETWORK"
-  | "PARSE_ERROR";
+  | "PARSE_ERROR"
+  | "DEMO_LIMIT_EXCEEDED";
 
 export interface AIAnalysisRecord {
   id: string;
@@ -157,6 +159,13 @@ export async function analyzeComplaintDraft(
 
   const analysisId = `analysis-${crypto.randomUUID().slice(0, 8)}`;
 
+  const isDemoUser = Boolean(
+    user?.email &&
+      (user.email.includes("civicpulse.local") ||
+        user.email.includes("demo") ||
+        user.viewOnly),
+  );
+
   // 3. Check Emergency Pause Switch (PRD-AI-007)
   if (settings.ai.paused) {
     const fallback = classifyByKeywords(redactedTitle, redactedDesc, categoryHint);
@@ -193,6 +202,47 @@ export async function analyzeComplaintDraft(
       analysis: record,
       analysisToken: signAnalysisToken(analysisId, user?.uid || "anon"),
     };
+  }
+
+  // 3b. Demo account Gemini limit (PRD Block D §5: 10 analyses/day per demo account)
+  if (isDemoUser && user?.uid) {
+    const today = new Date().toISOString().slice(0, 10);
+    const demoQuotaRef = firestore.collection("demoGeminiUsage").doc(`${user.uid}_${today}`);
+    let currentUsage = 0;
+    try {
+      const snap = await demoQuotaRef.get();
+      if (snap.exists) {
+        currentUsage = snap.data()?.count || 0;
+      }
+    } catch {
+      // Non-blocking quota lookup
+    }
+
+    if (currentUsage >= 10) {
+      const fallback = classifyByKeywords(redactedTitle, redactedDesc, categoryHint);
+      if (images.length > 0) {
+        fallback.output.visualEvidenceAssessment = `On-ground photographic evidence attached (${images.length} photo${images.length > 1 ? "s" : ""}). Visual evidence logged for municipal inspection.`;
+        fallback.output.hazardDetectedInImage = true;
+        fallback.output.imageConfidence = 0.85;
+      }
+      const latency = Date.now() - startTime;
+      const record: AIAnalysisRecord = {
+        id: analysisId,
+        inputHash,
+        source: "fallback",
+        model: "keyword-classifier",
+        output: fallback.output,
+        fallbackReason: "DEMO_LIMIT_EXCEEDED",
+        latencyMs: latency,
+        tokens: 0,
+        createdAt: new Date().toISOString(),
+      };
+      await firestore.collection("aiAnalyses").doc(analysisId).set(record);
+      return {
+        analysis: record,
+        analysisToken: signAnalysisToken(analysisId, user.uid),
+      };
+    }
   }
 
   // 4. Call Gemini with Timeout & Fallback (PRD §27.5)
@@ -323,6 +373,15 @@ export async function analyzeComplaintDraft(
       createdAt: new Date().toISOString(),
     };
     await firestore.collection("aiAnalyses").doc(analysisId).set(record);
+
+    if (isDemoUser && user?.uid) {
+      const today = new Date().toISOString().slice(0, 10);
+      const demoQuotaRef = firestore.collection("demoGeminiUsage").doc(`${user.uid}_${today}`);
+      await demoQuotaRef.set(
+        { count: FieldValue.increment(1), updatedAt: new Date().toISOString() },
+        { merge: true },
+      ).catch(() => {});
+    }
     await recordAiInferenceCall({
       id: analysisId,
       timestamp: record.createdAt,

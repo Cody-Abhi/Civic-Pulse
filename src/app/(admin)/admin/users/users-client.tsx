@@ -6,6 +6,7 @@ import { DataTable } from "@/components/data/data-table";
 import type { ColumnDef } from "@/components/data/data-table.types";
 import { QueueCardList } from "@/components/data/queue-card-list";
 import { Button } from "@/components/ui/button";
+import { ViewOnlyGuard } from "@/components/ui/view-only-guard";
 import type { AdminUser, Department, Role } from "@/domain/types";
 
 interface AdminUserRow extends AdminUser {
@@ -195,24 +196,28 @@ export function UsersClient({ initialUsers, departments }: UsersClientProps) {
         const isSoleAdmin = row.role === "admin" && activeAdminsCount <= 1;
         return (
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isSoleAdmin}
-              title={isSoleAdmin ? "Cannot modify the sole administrator" : undefined}
-              onClick={() => handleOpenRoleDialog(row)}
-            >
-              Role
-            </Button>
-            <Button
-              variant={row.status === "active" ? "ghost" : "primary"}
-              size="sm"
-              disabled={isSoleAdmin}
-              title={isSoleAdmin ? "Cannot suspend the sole administrator" : undefined}
-              onClick={() => handleOpenStatusDialog(row)}
-            >
-              {row.status === "active" ? "Suspend" : "Activate"}
-            </Button>
+            <ViewOnlyGuard tooltip="View-only demo account: Role modifications disabled.">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isSoleAdmin}
+                title={isSoleAdmin ? "Cannot modify the sole administrator" : undefined}
+                onClick={() => handleOpenRoleDialog(row)}
+              >
+                Role
+              </Button>
+            </ViewOnlyGuard>
+            <ViewOnlyGuard tooltip="View-only demo account: Account status changes disabled.">
+              <Button
+                variant={row.status === "active" ? "ghost" : "primary"}
+                size="sm"
+                disabled={isSoleAdmin}
+                title={isSoleAdmin ? "Cannot suspend the sole administrator" : undefined}
+                onClick={() => handleOpenStatusDialog(row)}
+              >
+                {row.status === "active" ? "Suspend" : "Activate"}
+              </Button>
+            </ViewOnlyGuard>
           </div>
         );
       },

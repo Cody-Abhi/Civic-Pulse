@@ -3,6 +3,7 @@
 import * as React from "react";
 import { CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ViewOnlyGuard } from "@/components/ui/view-only-guard";
 import { PriorityReceipt } from "@/components/ai/priority-receipt";
 import type { SystemSettings, Weights, PriorityResult } from "@/domain/types";
 
@@ -275,14 +276,16 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
             )}
 
             <div className="pt-2">
-              <Button
-                variant="primary"
-                size="sm"
-                disabled={!isWeightsValid || savingSection === "weights"}
-                onClick={handleSaveWeights}
-              >
-                {savingSection === "weights" ? "Saving..." : "Save factor weights"}
-              </Button>
+              <ViewOnlyGuard tooltip="View-only demo account: Factor weight adjustments disabled.">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={!isWeightsValid || savingSection === "weights"}
+                  onClick={handleSaveWeights}
+                >
+                  {savingSection === "weights" ? "Saving..." : "Save factor weights"}
+                </Button>
+              </ViewOnlyGuard>
             </div>
           </div>
 
@@ -337,14 +340,16 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
               />
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={savingSection === "duplicates"}
-              onClick={handleSaveDuplicates}
-            >
-              {savingSection === "duplicates" ? "Saving..." : "Update radar settings"}
-            </Button>
+            <ViewOnlyGuard tooltip="View-only demo account: Duplicate radar configuration disabled.">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={savingSection === "duplicates"}
+                onClick={handleSaveDuplicates}
+              >
+                {savingSection === "duplicates" ? "Saving..." : "Update radar settings"}
+              </Button>
+            </ViewOnlyGuard>
           </div>
         </div>
 
@@ -387,14 +392,16 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
               />
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={savingSection === "ai"}
-              onClick={handleSaveAi}
-            >
-              {savingSection === "ai" ? "Saving..." : "Update AI limits"}
-            </Button>
+            <ViewOnlyGuard tooltip="View-only demo account: AI budget modification disabled.">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={savingSection === "ai"}
+                onClick={handleSaveAi}
+              >
+                {savingSection === "ai" ? "Saving..." : "Update AI limits"}
+              </Button>
+            </ViewOnlyGuard>
           </div>
         </div>
       </div>
@@ -435,14 +442,16 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
               Purges in-memory modifications and restores the canonical 240 synthetic complaints fixture corpus. Real test reports remain untouched.
             </p>
           </div>
-          <Button
-            variant="outline"
-            className="border-rose-300 text-rose-700 hover:bg-rose-100 shrink-0"
-            onClick={() => setIsResetOpen(true)}
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Reset demo corpus
-          </Button>
+          <ViewOnlyGuard tooltip="View-only demo account: Manual corpus reset disabled.">
+            <Button
+              variant="outline"
+              className="border-rose-300 text-rose-700 hover:bg-rose-100 shrink-0"
+              onClick={() => setIsResetOpen(true)}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Reset demo corpus
+            </Button>
+          </ViewOnlyGuard>
         </div>
       </div>
 

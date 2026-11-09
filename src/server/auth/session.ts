@@ -13,6 +13,7 @@ export interface SessionUser {
   status: "active" | "suspended";
   emailVerified: boolean;
   homeWardId: string | null;
+  viewOnly?: boolean | undefined;
 }
 
 /**
@@ -53,6 +54,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       status: ((decodedClaims.status as "active" | "suspended") || (userData?.status as "active" | "suspended") || "active") as "active" | "suspended",
       emailVerified: true, // auto-verified
       homeWardId: ((userData?.homeWardId as string) || null) as string | null,
+      viewOnly: Boolean(decodedClaims.viewOnly || userData?.viewOnly),
     };
   } catch {
     return null;
@@ -135,6 +137,7 @@ export async function createSessionCookie(
     status: ((userData?.status as "active" | "suspended") || "active") as "active" | "suspended",
     emailVerified: true, // auto-verified
     homeWardId: (userData?.homeWardId as string) || null,
+    viewOnly: Boolean(decodedClaims.viewOnly || userData?.viewOnly),
   };
 
   return {

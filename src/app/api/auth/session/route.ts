@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
         role: user.role,
         departmentId: user.departmentId,
         homeWardId: user.homeWardId,
+        viewOnly: Boolean(user.viewOnly),
       },
     });
   } catch (err) {
